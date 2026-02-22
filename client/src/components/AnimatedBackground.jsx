@@ -7,7 +7,21 @@ import * as THREE from 'three';
 const FloatingShapes = ({ variant }) => {
     const groupRef = useRef();
 
+    const [randomValues, setRandomValues] = useState([]);
+
+    useEffect(() => {
+        setRandomValues(
+            Array.from({ length: 6 }, () => ({
+                x: (Math.random() - 0.5) * 15,
+                y: (Math.random() - 0.5) * 10,
+                z: Math.random() * -5,
+                scale: 0.5 + Math.random() * 0.8,
+            }))
+        );
+    }, []);
+
     const shapes = useMemo(() => {
+        if (randomValues.length === 0) return [];
         const colors = {
             default: ['#e50914', '#b20710'],
             blue: ['#00f2ea', '#0088ff'],
@@ -17,17 +31,13 @@ const FloatingShapes = ({ variant }) => {
 
         const colorSet = colors[variant] || colors.default;
 
-        return Array.from({ length: 6 }, (_, i) => ({
-            position: [
-                (Math.random() - 0.5) * 15,
-                (Math.random() - 0.5) * 10,
-                Math.random() * -5
-            ],
-            scale: 0.5 + Math.random() * 0.8,
+        return randomValues.map((rv, i) => ({
+            position: [rv.x, rv.y, rv.z],
+            scale: rv.scale,
             color: colorSet[i % colorSet.length],
             type: ['icosa', 'octa', 'torus'][i % 3]
         }));
-    }, [variant]);
+    }, [variant, randomValues]);
 
     useFrame((state) => {
         if (groupRef.current) {

@@ -72,9 +72,11 @@ const PaymentForm = ({ clientSecret, showDetails, seats, totalAmount, onSuccess 
     useEffect(() => {
         if (!upiCollect.active || upiCollect.status !== 'pending') return;
         if (upiCollect.countdown <= 0) {
-            setUpiCollect(prev => ({ ...prev, status: 'expired', active: false }));
-            setError('Payment request expired. Please try again.');
-            setProcessing(false);
+            setTimeout(() => {
+                setUpiCollect(prev => ({ ...prev, status: 'expired', active: false }));
+                setError('Payment request expired. Please try again.');
+                setProcessing(false);
+            }, 0);
             return;
         }
         const timer = setInterval(() => {
@@ -86,8 +88,10 @@ const PaymentForm = ({ clientSecret, showDetails, seats, totalAmount, onSuccess 
     // Real-time UPI ID verification with debounce
     useEffect(() => {
         if (!upiId) {
-            setUpiVerifyStatus('idle');
-            setUpiVerifyMsg('');
+            setTimeout(() => {
+                setUpiVerifyStatus('idle');
+                setUpiVerifyMsg('');
+            }, 0);
             return;
         }
 
@@ -171,13 +175,7 @@ const PaymentForm = ({ clientSecret, showDetails, seats, totalAmount, onSuccess 
         return Object.keys(errors).length === 0;
     };
 
-    const simulatePaymentSteps = async (callback) => {
-        for (let i = 0; i < PAYMENT_STEPS.length; i++) {
-            setCurrentStep(i);
-            await new Promise(resolve => setTimeout(resolve, 800));
-        }
-        callback();
-    };
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -723,9 +721,9 @@ const PaymentPage = () => {
         }
 
         initializePayment();
-    }, [user, showId, selectedSeats, navigate, totalAmount]);
+    }, [user, showId, selectedSeats, navigate, totalAmount, initializePayment]);
 
-    const initializePayment = async () => {
+    const initializePayment = React.useCallback(async () => {
         try {
             // Validate seat lock before payment
             const lockCheck = await axios.post(
@@ -762,7 +760,7 @@ const PaymentPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showId, selectedSeats, totalAmount, navigate]);
 
     const handlePaymentSuccess = async (paymentIntentId) => {
         try {

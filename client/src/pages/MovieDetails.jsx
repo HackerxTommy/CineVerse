@@ -24,11 +24,7 @@ const MovieDetails = () => {
     const [showTrailer, setShowTrailer] = useState(false);
     const trailerRef = useRef(null);
 
-    useEffect(() => {
-        fetchData();
-    }, [id]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             setLoading(true);
             const [movieRes, showsRes] = await Promise.all([
@@ -50,7 +46,11 @@ const MovieDetails = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, setMovie, setShows, setSelectedDate, setError, setLoading]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     // Group shows by date
     const showsByDate = shows.reduce((acc, show) => {

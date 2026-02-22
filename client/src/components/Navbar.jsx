@@ -25,7 +25,9 @@ const Navbar = () => {
     }, []);
 
     useEffect(() => {
-        setMenuOpen(false);
+        if (menuOpen) {
+            setTimeout(() => setMenuOpen(false), 0);
+        }
     }, [location]);
 
     return (

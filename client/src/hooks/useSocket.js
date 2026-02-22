@@ -64,7 +64,7 @@ export function useSocket(showId) {
         };
     }, [showId]);
 
-    return { seatUpdates, isConnected, clearUpdates, socket: socketRef.current };
+    return { seatUpdates, isConnected, clearUpdates };
 }
 
 export default useSocket;
