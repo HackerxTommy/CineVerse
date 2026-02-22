@@ -64,6 +64,19 @@ class StripeService {
         const paymentIntent = await this.getPaymentIntent(paymentIntentId);
         return paymentIntent.status === 'succeeded';
     }
+
+    /**
+     * Verify Stripe webhook signature
+     * @param {Buffer} payload - Raw request body
+     * @param {string} signature - Stripe-Signature header
+     * @param {string} webhookSecret - Webhook endpoint secret
+     */
+    verifyWebhookSignature(payload, signature, webhookSecret) {
+        if (!this.stripe) {
+            throw new Error('Stripe is not configured');
+        }
+        return this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    }
 }
 
 module.exports = new StripeService();

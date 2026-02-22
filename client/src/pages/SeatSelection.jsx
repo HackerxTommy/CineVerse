@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,11 +30,12 @@ const getYouTubeId = (url) => {
 const SeatSelection = () => {
     const { showId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useAuth();
 
     const [show, setShow] = useState(null);
-    const [selectedSeats, setSelectedSeats] = useState([]);
-    const [timeLeft, setTimeLeft] = useState(300);
+    const [selectedSeats, setSelectedSeats] = useState(location.state?.selectedSeats || []);
+    const [timeLeft, setTimeLeft] = useState(location.state?.timeLeft || 300);
     const [timerActive, setTimerActive] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -97,20 +98,27 @@ const SeatSelection = () => {
             setSelectedSeats(prev => [...prev, seat.id]);
         }
     };
-
     const handleProceed = async () => {
         if (selectedSeats.length === 0) {
             alert('Please select at least one seat');
             return;
         }
         if (!user) {
-            navigate('/login', { state: { from: location } });
+            // Pass the current selected seats in state so they aren't lost after login
+            navigate('/login', {
+                state: {
+                    from: {
+                        pathname: location.pathname,
+                        state: { selectedSeats, timeLeft }
+                    }
+                }
+            });
             return;
         }
 
         setLoading(true);
         try {
-            await axios.post(`${API_URL}/bookings/lock`, { showId, selectedSeats });
+            await axios.post(`${API_URL}/bookings/lock`, { showId, selectedSeats }, { withCredentials: true });
             setTimerActive(true);
 
             // Navigate to payment page

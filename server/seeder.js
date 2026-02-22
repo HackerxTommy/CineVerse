@@ -1,10 +1,13 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 
 dotenv.config();
 
 const Movie = require('./models/Movie');
 const Show = require('./models/Show');
+const User = require('./models/User');
+const Booking = require('./models/Booking');
 
 const movies = [
     // Movies
@@ -323,7 +326,24 @@ const seedDatabase = async () => {
 
         await Movie.deleteMany({});
         await Show.deleteMany({});
-        console.log('Cleared existing movies and shows');
+        await Booking.deleteMany({});
+        console.log('Cleared existing movies, shows, and bookings');
+
+        // Seed admin user
+        const existingAdmin = await User.findOne({ email: 'admin@cineverse.com' });
+        if (!existingAdmin) {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash('Admin@123', salt);
+            await User.create({
+                name: 'CineVerse Admin',
+                email: 'admin@cineverse.com',
+                password: hashedPassword,
+                role: 'admin'
+            });
+            console.log('✅ Admin user created (admin@cineverse.com / Admin@123)');
+        } else {
+            console.log('ℹ️  Admin user already exists');
+        }
 
         const insertedMovies = await Movie.insertMany(movies);
         console.log(`✅ Inserted ${insertedMovies.length} movies/series`);

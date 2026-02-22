@@ -6,7 +6,6 @@ import AnimatedBackground from '../components/AnimatedBackground';
 import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api';
-
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -57,8 +56,8 @@ const Login = () => {
 
                     // Refresh auth state and redirect
                     await checkAuth();
-                    const from = location.state?.from?.pathname || '/';
-                    navigate(from);
+                    const fromObj = location.state?.from || { pathname: '/' };
+                    navigate(fromObj.pathname || '/', { state: fromObj.state });
                     return;
                 }
 
@@ -72,8 +71,8 @@ const Login = () => {
                 }
 
                 // Normal login success - redirect
-                const from = location.state?.from?.pathname || '/';
-                navigate(from);
+                const fromObj = location.state?.from || { pathname: '/' };
+                navigate(fromObj.pathname || '/', { state: fromObj.state });
             } else {
                 // Registration
                 if (formData.password !== formData.confirmPassword) {
@@ -214,7 +213,8 @@ const Login = () => {
                     <AnimatePresence mode="wait">
                         <motion.form
                             key={isLogin ? 'login' : 'signup'}
-                            variants={formVariants}
+                            vari
+                            ants={formVariants}
                             initial="hidden"
                             animate="visible"
                             exit="exit"

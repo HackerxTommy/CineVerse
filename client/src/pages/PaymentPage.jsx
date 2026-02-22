@@ -11,10 +11,24 @@ const API_URL = 'http://localhost:5000/api';
 
 // Payment method icons
 const UPI_APPS = [
-    { id: 'gpay', name: 'Google Pay', color: '#4285f4', icon: '🔵' },
-    { id: 'phonepe', name: 'PhonePe', color: '#5f259f', icon: '💜' },
-    { id: 'paytm', name: 'Paytm', color: '#00baf2', icon: '🔷' },
-    { id: 'bhim', name: 'BHIM', color: '#00a651', icon: '🟢' }
+    { id: 'gpay', name: 'Google Pay', color: '#4285f4', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f2/Google_Pay_Logo.svg' },
+    { id: 'phonepe', name: 'PhonePe', color: '#5f259f', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg' },
+    { id: 'paytm', name: 'Paytm', color: '#00baf2', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/24/Paytm_Logo_%28standalone%29.svg' },
+    { id: 'bhim', name: 'BHIM', color: '#00a651', logo: 'https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg' }
+];
+
+// Known valid UPI bank handles
+const VALID_UPI_HANDLES = [
+    'okaxis', 'okhdfcbank', 'okicici', 'oksbi',
+    'ybl', 'ibl', 'axl', 'sbi', 'upi',
+    'paytm', 'apl', 'ratn', 'icici', 'hdfcbank',
+    'axisbank', 'kotak', 'indus', 'barodampay',
+    'aubank', 'indianbank', 'cbin', 'cnrb',
+    'pnb', 'idbi', 'idfcbank', 'federal',
+    'dbs', 'rbl', 'kvb', 'kbl',
+    'freecharge', 'jupiteraxis', 'slice',
+    'superyes', 'tapicici', 'waaxis', 'wahdfcbank',
+    'abfspay', 'ikwik', 'myicici', 'pingpay'
 ];
 
 const CARD_ELEMENT_OPTIONS = {
@@ -48,8 +62,82 @@ const PaymentForm = ({ clientSecret, showDetails, seats, totalAmount, onSuccess 
     const [paymentMethod, setPaymentMethod] = useState('card');
     const [selectedUpi, setSelectedUpi] = useState(null);
     const [upiId, setUpiId] = useState('');
+    const [upiVerifyStatus, setUpiVerifyStatus] = useState('idle'); // idle | checking | verified | invalid
+    const [upiVerifyMsg, setUpiVerifyMsg] = useState('');
+    const [upiCollect, setUpiCollect] = useState({ active: false, status: 'pending', countdown: 30 }); // UPI collect request state
     const [currentStep, setCurrentStep] = useState(-1);
     const [validationErrors, setValidationErrors] = useState({});
+
+    // UPI collect request countdown
+    useEffect(() => {
+        if (!upiCollect.active || upiCollect.status !== 'pending') return;
+        if (upiCollect.countdown <= 0) {
+            setUpiCollect(prev => ({ ...prev, status: 'expired', active: false }));
+            setError('Payment request expired. Please try again.');
+            setProcessing(false);
+            return;
+        }
+        const timer = setInterval(() => {
+            setUpiCollect(prev => ({ ...prev, countdown: prev.countdown - 1 }));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [upiCollect.active, upiCollect.status, upiCollect.countdown]);
+
+    // Real-time UPI ID verification with debounce
+    useEffect(() => {
+        if (!upiId) {
+            setUpiVerifyStatus('idle');
+            setUpiVerifyMsg('');
+            return;
+        }
+
+        const parts = upiId.split('@');
+        if (parts.length !== 2 || !parts[0].trim()) {
+            if (upiId.length > 2) {
+                setUpiVerifyStatus('invalid');
+                setUpiVerifyMsg('Format: yourname@bankhandle');
+            } else {
+                setUpiVerifyStatus('idle');
+                setUpiVerifyMsg('');
+            }
+            return;
+        }
+
+        const [username, handle] = parts;
+        if (username.length < 3) {
+            setUpiVerifyStatus('invalid');
+            setUpiVerifyMsg('Username must be at least 3 characters');
+            return;
+        }
+
+        if (!handle) {
+            setUpiVerifyStatus('idle');
+            setUpiVerifyMsg('');
+            return;
+        }
+
+        // Start verification (debounced)
+        setUpiVerifyStatus('checking');
+        setUpiVerifyMsg('Verifying UPI ID...');
+
+        const timer = setTimeout(() => {
+            const isValidHandle = VALID_UPI_HANDLES.includes(handle.toLowerCase());
+            const hasValidFormat = /^[a-zA-Z0-9.\-_]{3,}$/.test(username);
+
+            if (isValidHandle && hasValidFormat) {
+                setUpiVerifyStatus('verified');
+                setUpiVerifyMsg(`Verified • ${handle.toUpperCase()} linked`);
+            } else if (!isValidHandle) {
+                setUpiVerifyStatus('invalid');
+                setUpiVerifyMsg(`Unknown bank handle "@${handle}"`);
+            } else {
+                setUpiVerifyStatus('invalid');
+                setUpiVerifyMsg('Invalid UPI ID format');
+            }
+        }, 1200);
+
+        return () => clearTimeout(timer);
+    }, [upiId]);
 
     // Validate form before submission
     const validateForm = () => {
@@ -66,6 +154,8 @@ const PaymentForm = ({ clientSecret, showDetails, seats, totalAmount, onSuccess 
             }
             if (!upiId || !upiId.includes('@')) {
                 errors.upiId = 'Please enter a valid UPI ID (e.g., name@upi)';
+            } else if (upiVerifyStatus !== 'verified') {
+                errors.upiId = 'Please wait for UPI ID verification';
             }
         }
 
@@ -135,10 +225,22 @@ const PaymentForm = ({ clientSecret, showDetails, seats, totalAmount, onSuccess 
                     onSuccess(paymentIntent.id);
                 }
             } else if (paymentMethod === 'upi') {
-                // Simulate UPI payment with validation steps
-                await simulatePaymentSteps(() => {
-                    onSuccess('upi_' + Date.now());
+                // Simulate UPI collect request
+                setUpiCollect({ active: true, status: 'pending', countdown: 30 });
+
+                // Simulate: after ~8 seconds, auto-approve the payment
+                await new Promise((resolve) => {
+                    setTimeout(() => {
+                        setUpiCollect(prev => ({ ...prev, status: 'approved' }));
+                        setTimeout(() => {
+                            setUpiCollect(prev => ({ ...prev, active: false }));
+                            setProcessing(false);
+                            resolve();
+                        }, 1500);
+                    }, 8000);
                 });
+
+                onSuccess('upi_' + Date.now());
             }
         } catch (err) {
             setError(err.message || 'Payment failed. Please try again.');
@@ -147,260 +249,450 @@ const PaymentForm = ({ clientSecret, showDetails, seats, totalAmount, onSuccess 
         }
     };
 
+    const selectedApp = UPI_APPS.find(a => a.id === selectedUpi);
+
     return (
-        <form onSubmit={handleSubmit} className="payment-form">
-            {/* Payment Step Progress */}
-            {processing && currentStep >= 0 && (
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="payment-steps glass-panel"
-                    style={{ padding: '20px', marginBottom: '25px' }}
-                >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        {PAYMENT_STEPS.map((step, i) => (
-                            <div
-                                key={step.id}
-                                style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    flex: 1,
-                                    position: 'relative'
-                                }}
-                            >
-                                <motion.div
-                                    animate={{
-                                        scale: currentStep === i ? [1, 1.2, 1] : 1,
-                                        opacity: currentStep >= i ? 1 : 0.3
-                                    }}
-                                    transition={{ repeat: currentStep === i ? Infinity : 0, duration: 1 }}
-                                    style={{
-                                        width: '50px',
-                                        height: '50px',
-                                        borderRadius: '50%',
-                                        background: currentStep >= i
-                                            ? 'linear-gradient(135deg, var(--primary), #b20710)'
-                                            : 'rgba(255,255,255,0.1)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '1.5rem'
-                                    }}
-                                >
-                                    {step.icon}
-                                </motion.div>
-                                <span style={{
-                                    marginTop: '8px',
-                                    fontSize: '0.8rem',
-                                    color: currentStep >= i ? '#fff' : '#666'
-                                }}>
-                                    {step.label}
-                                </span>
-                                {i < PAYMENT_STEPS.length - 1 && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '25px',
-                                        left: '60%',
-                                        width: '80%',
-                                        height: '2px',
-                                        background: currentStep > i ? 'var(--primary)' : 'rgba(255,255,255,0.1)'
-                                    }} />
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </motion.div>
-            )}
-
-            {/* Payment Method Selection */}
-            <div className="payment-methods">
-                <h3>Choose Payment Method</h3>
-
-                <div className="method-tabs">
-                    <motion.button
-                        type="button"
-                        className={`method-tab ${paymentMethod === 'card' ? 'active' : ''}`}
-                        onClick={() => setPaymentMethod('card')}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+        <>
+            {/* UPI Collect Request Overlay */}
+            <AnimatePresence>
+                {upiCollect.active && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            background: 'rgba(0,0,0,0.85)',
+                            backdropFilter: 'blur(10px)',
+                            zIndex: 1000,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
                     >
-                        💳 Card
-                    </motion.button>
-                    <motion.button
-                        type="button"
-                        className={`method-tab ${paymentMethod === 'upi' ? 'active' : ''}`}
-                        onClick={() => setPaymentMethod('upi')}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                    >
-                        📱 UPI
-                    </motion.button>
-                </div>
-
-                <AnimatePresence mode="wait">
-                    {paymentMethod === 'card' && (
                         <motion.div
-                            key="card"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="card-section"
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            style={{
+                                background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+                                borderRadius: '24px',
+                                padding: '40px',
+                                maxWidth: '420px',
+                                width: '90%',
+                                textAlign: 'center',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                boxShadow: '0 25px 80px rgba(0,0,0,0.5)'
+                            }}
                         >
-                            <div className="card-brands">
-                                <span className="card-brand visa" style={{ background: '#1a1f71', color: 'white', padding: '5px 10px', borderRadius: '4px', fontWeight: 'bold', fontStyle: 'italic' }}>VISA</span>
-                                <span className="card-brand mastercard" style={{ background: '#eb001b', color: 'white', padding: '5px 10px', borderRadius: '4px', fontWeight: 'bold' }}>Mastercard</span>
-                                <span className="card-brand rupay" style={{ background: '#00baf2', color: 'white', padding: '5px 10px', borderRadius: '4px', fontWeight: 'bold' }}>RuPay</span>
-                                <span className="card-brand amex" style={{ background: '#005587', color: 'white', padding: '5px 10px', borderRadius: '4px', fontWeight: 'bold' }}>Amex</span>
-                            </div>
-                            <div className="card-element-wrapper" style={{
-                                border: validationErrors.card ? '1px solid var(--danger)' : undefined
-                            }}>
-                                <CardElement options={CARD_ELEMENT_OPTIONS} />
-                            </div>
-                            {validationErrors.card && (
-                                <p className="field-error" style={{ color: 'var(--danger)', fontSize: '0.85rem', marginTop: '5px' }}>
-                                    {validationErrors.card}
-                                </p>
-                            )}
-                            <p className="secure-text">🔒 Secured by Stripe - 256-bit encryption</p>
-                        </motion.div>
-                    )}
-
-                    {paymentMethod === 'upi' && (
-                        <motion.div
-                            key="upi"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="upi-section"
-                        >
-                            <div className="upi-apps">
-                                {UPI_APPS.map(app => (
+                            {upiCollect.status === 'pending' && (
+                                <>
+                                    {/* Pulsing phone icon */}
                                     <motion.div
-                                        key={app.id}
-                                        className={`upi-app ${selectedUpi === app.id ? 'selected' : ''}`}
-                                        onClick={() => setSelectedUpi(app.id)}
-                                        whileHover={{ scale: 1.05, y: -5 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        style={{ '--app-color': app.color }}
+                                        animate={{ scale: [1, 1.1, 1] }}
+                                        transition={{ repeat: Infinity, duration: 2 }}
+                                        style={{ fontSize: '4rem', marginBottom: '20px' }}
                                     >
-                                        <span className="upi-icon">{app.icon}</span>
-                                        <span className="upi-name">{app.name}</span>
+                                        📱
                                     </motion.div>
-                                ))}
-                            </div>
-                            {validationErrors.upi && (
-                                <p className="field-error" style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>
-                                    {validationErrors.upi}
-                                </p>
+
+                                    <h3 style={{ margin: '0 0 8px', fontSize: '1.3rem' }}>Payment Request Sent</h3>
+                                    <p style={{ color: '#888', margin: '0 0 25px', fontSize: '0.95rem' }}>
+                                        Approve the request on your {selectedApp?.name || 'UPI'} app
+                                    </p>
+
+                                    {/* UPI ID display */}
+                                    <div style={{
+                                        background: 'rgba(255,255,255,0.05)',
+                                        borderRadius: '12px',
+                                        padding: '15px',
+                                        marginBottom: '25px'
+                                    }}>
+                                        <p style={{ color: '#666', fontSize: '0.8rem', margin: '0 0 5px' }}>Paying to</p>
+                                        <p style={{ color: '#00f2ea', fontFamily: 'monospace', fontSize: '1.1rem', margin: '0 0 10px' }}>{upiId}</p>
+                                        <p style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>₹{totalAmount?.toFixed(2)}</p>
+                                    </div>
+
+                                    {/* Animated waiting dots */}
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '20px' }}>
+                                        {[0, 1, 2].map(i => (
+                                            <motion.div
+                                                key={i}
+                                                animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.2, 0.8] }}
+                                                transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.3 }}
+                                                style={{
+                                                    width: '10px',
+                                                    height: '10px',
+                                                    borderRadius: '50%',
+                                                    background: '#00f2ea'
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    <p style={{ color: '#666', fontSize: '0.85rem', margin: '0 0 15px' }}>
+                                        Waiting for approval...
+                                    </p>
+
+                                    {/* Countdown timer */}
+                                    <div style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        borderRadius: '20px',
+                                        padding: '8px 16px',
+                                        color: upiCollect.countdown <= 10 ? '#ff4757' : '#888',
+                                        fontSize: '0.9rem'
+                                    }}>
+                                        ⏱️ Expires in {upiCollect.countdown}s
+                                    </div>
+                                </>
                             )}
-                            {selectedUpi && (
+
+                            {upiCollect.status === 'approved' && (
                                 <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="upi-input-section"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
                                 >
-                                    <input
-                                        type="text"
-                                        placeholder="Enter UPI ID (e.g., name@upi)"
-                                        className="upi-input"
-                                        value={upiId}
-                                        onChange={(e) => setUpiId(e.target.value)}
-                                        style={{
-                                            border: validationErrors.upiId ? '1px solid var(--danger)' : undefined
-                                        }}
-                                    />
-                                    {validationErrors.upiId && (
-                                        <p className="field-error" style={{ color: 'var(--danger)', fontSize: '0.85rem', marginTop: '5px' }}>
-                                            {validationErrors.upiId}
-                                        </p>
-                                    )}
+                                    <motion.div
+                                        animate={{ scale: [1, 1.2, 1] }}
+                                        transition={{ duration: 0.5 }}
+                                        style={{ fontSize: '5rem', marginBottom: '15px' }}
+                                    >✅</motion.div>
+                                    <h3 style={{ color: '#2ed573', margin: '0 0 10px' }}>Payment Approved!</h3>
+                                    <p style={{ color: '#888', margin: 0 }}>Confirming your booking...</p>
                                 </motion.div>
                             )}
                         </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-
-            {error && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="error-message"
-                    style={{
-                        padding: '15px',
-                        background: 'rgba(255,71,87,0.15)',
-                        border: '1px solid var(--danger)',
-                        borderRadius: '10px',
-                        color: 'var(--danger)',
-                        marginBottom: '20px'
-                    }}
-                >
-                    ⚠️ {error}
-                </motion.div>
-            )}
-
-            {/* Order Summary */}
-            <div className="order-summary glass-panel">
-                <h4>Order Summary</h4>
-                <div className="summary-row">
-                    <span>🎬 {showDetails?.movie}</span>
-                </div>
-                <div className="summary-row">
-                    <span>💺 Seats: {seats.join(', ')}</span>
-                </div>
-                <div className="summary-row">
-                    <span>🏢 {showDetails?.theater}</span>
-                </div>
-                <div className="summary-row">
-                    <span>📅 {showDetails?.time && new Date(showDetails.time).toLocaleString()}</span>
-                </div>
-                <hr />
-                <div className="summary-row">
-                    <span>Ticket Price ({seats.length}x)</span>
-                    <span>₹{showDetails?.price * seats.length}</span>
-                </div>
-                <div className="summary-row">
-                    <span>Convenience Fee</span>
-                    <span>₹{(totalAmount - (showDetails?.price * seats.length)).toFixed(2)}</span>
-                </div>
-                <div className="summary-row total">
-                    <span>Total</span>
-                    <span className="amount">₹{totalAmount?.toFixed(2)}</span>
-                </div>
-            </div>
-
-            <motion.button
-                type="submit"
-                className="btn btn-primary btn-glow pay-button"
-                disabled={processing || (!stripe && paymentMethod === 'card')}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-            >
-                {processing ? (
-                    <span className="processing">
-                        <span className="spinner" /> {PAYMENT_STEPS[currentStep]?.label || 'Processing'}...
-                    </span>
-                ) : (
-                    `Pay ₹${totalAmount?.toFixed(2)}`
+                    </motion.div>
                 )}
-            </motion.button>
+            </AnimatePresence>
 
-            {/* Trust badges */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                gap: '25px',
-                marginTop: '25px',
-                fontSize: '0.85rem',
-                color: '#888'
-            }}>
-                <span>🔒 SSL Secured</span>
-                <span>💳 PCI Compliant</span>
-                <span>🛡️ Safe Checkout</span>
-            </div>
-        </form>
+            <form onSubmit={handleSubmit} className="payment-form">
+                {/* Payment Step Progress */}
+                {processing && currentStep >= 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="payment-steps glass-panel"
+                        style={{ padding: '20px', marginBottom: '25px' }}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            {PAYMENT_STEPS.map((step, i) => (
+                                <div
+                                    key={step.id}
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        flex: 1,
+                                        position: 'relative'
+                                    }}
+                                >
+                                    <motion.div
+                                        animate={{
+                                            scale: currentStep === i ? [1, 1.2, 1] : 1,
+                                            opacity: currentStep >= i ? 1 : 0.3
+                                        }}
+                                        transition={{ repeat: currentStep === i ? Infinity : 0, duration: 1 }}
+                                        style={{
+                                            width: '50px',
+                                            height: '50px',
+                                            borderRadius: '50%',
+                                            background: currentStep >= i
+                                                ? 'linear-gradient(135deg, var(--primary), #b20710)'
+                                                : 'rgba(255,255,255,0.1)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '1.5rem'
+                                        }}
+                                    >
+                                        {step.icon}
+                                    </motion.div>
+                                    <span style={{
+                                        marginTop: '8px',
+                                        fontSize: '0.8rem',
+                                        color: currentStep >= i ? '#fff' : '#666'
+                                    }}>
+                                        {step.label}
+                                    </span>
+                                    {i < PAYMENT_STEPS.length - 1 && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '25px',
+                                            left: '60%',
+                                            width: '80%',
+                                            height: '2px',
+                                            background: currentStep > i ? 'var(--primary)' : 'rgba(255,255,255,0.1)'
+                                        }} />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Payment Method Selection */}
+                <div className="payment-methods">
+                    <h3>Choose Payment Method</h3>
+
+                    <div className="method-tabs">
+                        <motion.button
+                            type="button"
+                            className={`method-tab ${paymentMethod === 'card' ? 'active' : ''}`}
+                            onClick={() => setPaymentMethod('card')}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            💳 Card
+                        </motion.button>
+                        <motion.button
+                            type="button"
+                            className={`method-tab ${paymentMethod === 'upi' ? 'active' : ''}`}
+                            onClick={() => setPaymentMethod('upi')}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            📱 UPI
+                        </motion.button>
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                        {paymentMethod === 'card' && (
+                            <motion.div
+                                key="card"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="card-section"
+                            >
+                                <div className="card-brands">
+                                    <span className="card-brand visa" style={{ background: '#1a1f71', color: 'white', padding: '5px 10px', borderRadius: '4px', fontWeight: 'bold', fontStyle: 'italic' }}>VISA</span>
+                                    <span className="card-brand mastercard" style={{ background: '#eb001b', color: 'white', padding: '5px 10px', borderRadius: '4px', fontWeight: 'bold' }}>Mastercard</span>
+                                    <span className="card-brand rupay" style={{ background: '#00baf2', color: 'white', padding: '5px 10px', borderRadius: '4px', fontWeight: 'bold' }}>RuPay</span>
+                                    <span className="card-brand amex" style={{ background: '#005587', color: 'white', padding: '5px 10px', borderRadius: '4px', fontWeight: 'bold' }}>Amex</span>
+                                </div>
+                                <div className="card-element-wrapper" style={{
+                                    border: validationErrors.card ? '1px solid var(--danger)' : undefined
+                                }}>
+                                    <CardElement options={CARD_ELEMENT_OPTIONS} />
+                                </div>
+                                {validationErrors.card && (
+                                    <p className="field-error" style={{ color: 'var(--danger)', fontSize: '0.85rem', marginTop: '5px' }}>
+                                        {validationErrors.card}
+                                    </p>
+                                )}
+                                <p className="secure-text">🔒 Secured by Stripe - 256-bit encryption</p>
+                            </motion.div>
+                        )}
+
+                        {paymentMethod === 'upi' && (
+                            <motion.div
+                                key="upi"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="upi-section"
+                            >
+                                <div className="upi-apps">
+                                    {UPI_APPS.map(app => (
+                                        <motion.div
+                                            key={app.id}
+                                            className={`upi-app ${selectedUpi === app.id ? 'selected' : ''}`}
+                                            onClick={() => setSelectedUpi(app.id)}
+                                            whileHover={{ scale: 1.05, y: -5 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            style={{ '--app-color': app.color }}
+                                        >
+                                            <img src={app.logo} alt={app.name} style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '8px' }} />
+                                        </motion.div>
+                                    ))}
+                                </div>
+                                {validationErrors.upi && (
+                                    <p className="field-error" style={{ color: 'var(--danger)', fontSize: '0.85rem' }}>
+                                        {validationErrors.upi}
+                                    </p>
+                                )}
+                                {selectedUpi && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="upi-input-section"
+                                    >
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type="text"
+                                                placeholder="Enter UPI ID (e.g., name@okaxis)"
+                                                className="upi-input"
+                                                value={upiId}
+                                                onChange={(e) => setUpiId(e.target.value.toLowerCase().trim())}
+                                                style={{
+                                                    border: upiVerifyStatus === 'verified' ? '1px solid #2ed573'
+                                                        : upiVerifyStatus === 'invalid' ? '1px solid var(--danger)'
+                                                            : validationErrors.upiId ? '1px solid var(--danger)'
+                                                                : '1px solid rgba(255,255,255,0.1)',
+                                                    paddingRight: '45px',
+                                                    transition: 'border-color 0.3s ease'
+                                                }}
+                                            />
+                                            {/* Verification status icon */}
+                                            <div style={{
+                                                position: 'absolute',
+                                                right: '12px',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                display: 'flex',
+                                                alignItems: 'center'
+                                            }}>
+                                                {upiVerifyStatus === 'checking' && (
+                                                    <motion.div
+                                                        animate={{ rotate: 360 }}
+                                                        transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}
+                                                        style={{
+                                                            width: '20px',
+                                                            height: '20px',
+                                                            border: '2px solid rgba(255,255,255,0.1)',
+                                                            borderTopColor: '#00f2ea',
+                                                            borderRadius: '50%'
+                                                        }}
+                                                    />
+                                                )}
+                                                {upiVerifyStatus === 'verified' && (
+                                                    <motion.span
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        style={{ fontSize: '1.3rem' }}
+                                                    >✅</motion.span>
+                                                )}
+                                                {upiVerifyStatus === 'invalid' && (
+                                                    <motion.span
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        style={{ fontSize: '1.3rem' }}
+                                                    >❌</motion.span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {/* Verification message */}
+                                        <AnimatePresence>
+                                            {upiVerifyMsg && (
+                                                <motion.p
+                                                    initial={{ opacity: 0, y: -5 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0 }}
+                                                    style={{
+                                                        fontSize: '0.85rem',
+                                                        marginTop: '8px',
+                                                        color: upiVerifyStatus === 'verified' ? '#2ed573'
+                                                            : upiVerifyStatus === 'invalid' ? '#ff4757'
+                                                                : upiVerifyStatus === 'checking' ? '#00f2ea'
+                                                                    : '#888',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px'
+                                                    }}
+                                                >
+                                                    {upiVerifyStatus === 'checking' && '🔄'}
+                                                    {upiVerifyStatus === 'verified' && '🔒'}
+                                                    {upiVerifyStatus === 'invalid' && '⚠️'}
+                                                    {upiVerifyMsg}
+                                                </motion.p>
+                                            )}
+                                        </AnimatePresence>
+                                        {validationErrors.upiId && upiVerifyStatus !== 'invalid' && (
+                                            <p className="field-error" style={{ color: 'var(--danger)', fontSize: '0.85rem', marginTop: '5px' }}>
+                                                {validationErrors.upiId}
+                                            </p>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="error-message"
+                        style={{
+                            padding: '15px',
+                            background: 'rgba(255,71,87,0.15)',
+                            border: '1px solid var(--danger)',
+                            borderRadius: '10px',
+                            color: 'var(--danger)',
+                            marginBottom: '20px'
+                        }}
+                    >
+                        ⚠️ {error}
+                    </motion.div>
+                )}
+
+                {/* Order Summary */}
+                <div className="order-summary glass-panel">
+                    <h4>Order Summary</h4>
+                    <div className="summary-row">
+                        <span>🎬 {showDetails?.movie}</span>
+                    </div>
+                    <div className="summary-row">
+                        <span>💺 Seats: {seats.join(', ')}</span>
+                    </div>
+                    <div className="summary-row">
+                        <span>🏢 {showDetails?.theater}</span>
+                    </div>
+                    <div className="summary-row">
+                        <span>📅 {showDetails?.time && new Date(showDetails.time).toLocaleString()}</span>
+                    </div>
+                    <hr />
+                    <div className="summary-row">
+                        <span>Ticket Price ({seats.length}x)</span>
+                        <span>₹{showDetails?.price * seats.length}</span>
+                    </div>
+                    <div className="summary-row">
+                        <span>Convenience Fee</span>
+                        <span>₹{(totalAmount - (showDetails?.price * seats.length)).toFixed(2)}</span>
+                    </div>
+                    <div className="summary-row total">
+                        <span>Total</span>
+                        <span className="amount">₹{totalAmount?.toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <motion.button
+                    type="submit"
+                    className="btn btn-primary btn-glow pay-button"
+                    disabled={processing || (!stripe && paymentMethod === 'card')}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                >
+                    {processing ? (
+                        <span className="processing">
+                            <span className="spinner" /> {PAYMENT_STEPS[currentStep]?.label || 'Processing'}...
+                        </span>
+                    ) : (
+                        `Pay ₹${totalAmount?.toFixed(2)}`
+                    )}
+                </motion.button>
+
+                {/* Trust badges */}
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '25px',
+                    marginTop: '25px',
+                    fontSize: '0.85rem',
+                    color: '#888'
+                }}>
+                    <span>🔒 SSL Secured</span>
+                    <span>💳 PCI Compliant</span>
+                    <span>🛡️ Safe Checkout</span>
+                </div>
+            </form>
+        </>
     );
 };
 

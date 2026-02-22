@@ -1,5 +1,6 @@
 const Movie = require('../models/Movie');
 const Show = require('../models/Show');
+const axios = require('axios');
 
 // @desc    Get all movies
 // @route   GET /api/movies

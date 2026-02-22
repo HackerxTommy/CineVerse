@@ -1,6 +1,22 @@
 const Booking = require('../models/Booking');
 const Show = require('../models/Show');
 
+// Seat tier multipliers — must match client-side SEAT_TIERS in SeatSelection.jsx
+const getSeatMultiplier = (row) => {
+    if (['A', 'B'].includes(row)) return 0.8;       // Front (Budget)
+    if (['C', 'D', 'E'].includes(row)) return 1.0;   // Middle (Regular)
+    if (['F', 'G'].includes(row)) return 1.5;         // Recliner (Premium)
+    return 1.0;
+};
+
+const calculateSeatsTotal = (show, seatIds) => {
+    return seatIds.reduce((sum, seatId) => {
+        const seat = show.seats.find(s => s.id === seatId);
+        if (!seat) return sum;
+        return sum + (show.price * getSeatMultiplier(seat.row));
+    }, 0);
+};
+
 // @desc    Lock seats (start booking timer)
 // @route   POST /api/bookings/lock
 exports.lockSeats = async (req, res, next) => {
@@ -56,6 +72,16 @@ exports.lockSeats = async (req, res, next) => {
 
         await show.save();
 
+        // EMIT WEBSOCKET EVENT — real-time seat lock notification
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`show:${showId}`).emit('seatLocked', {
+                showId,
+                seats: selectedSeats,
+                lockExpires: lockExpiry
+            });
+        }
+
         res.json({
             message: 'Seats locked successfully',
             lockExpires: lockExpiry,
@@ -92,6 +118,15 @@ exports.createBooking = async (req, res, next) => {
             return res.status(404).json({ message: 'Show not found' });
         }
 
+        // SERVER-SIDE AMOUNT VALIDATION
+        const expectedAmount = calculateSeatsTotal(show, seats);
+        if (Math.abs(totalAmount - expectedAmount) > 0.01) {
+            return res.status(400).json({
+                message: 'Amount mismatch. Price may have changed.',
+                expected: expectedAmount
+            });
+        }
+
         // Verify seats are available
         const unavailableSeats = [];
         for (const seatId of seats) {
@@ -116,7 +151,7 @@ exports.createBooking = async (req, res, next) => {
             user: req.user._id,
             show: showId,
             seats,
-            totalAmount,
+            totalAmount: expectedAmount,
             status: 'confirmed'
         });
 
@@ -135,6 +170,16 @@ exports.createBooking = async (req, res, next) => {
             path: 'show',
             populate: { path: 'movie', select: 'title poster' }
         });
+
+        // EMIT WEBSOCKET EVENT
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`show:${showId}`).emit('seatBooked', {
+                showId,
+                seats,
+                bookedBy: req.user._id
+            });
+        }
 
         res.status(201).json({
             message: 'Booking confirmed successfully',

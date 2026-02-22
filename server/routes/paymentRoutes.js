@@ -1,14 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { createPaymentIntent, confirmPayment, getPaymentConfig } = require('../controllers/paymentController');
-
-// Auth middleware
-const protect = (req, res, next) => {
-    if (req.isAuthenticated && req.isAuthenticated()) {
-        return next();
-    }
-    res.status(401).json({ message: 'Please login to continue' });
-};
+const { protect } = require('../middleware/auth');
+const { createPaymentIntent, confirmPayment, getPaymentConfig, handleWebhook } = require('../controllers/paymentController');
 
 // GET /api/payments/config - Get Stripe publishable key
 router.get('/config', getPaymentConfig);
@@ -18,5 +11,8 @@ router.post('/create-intent', protect, createPaymentIntent);
 
 // POST /api/payments/confirm - Confirm payment and create booking (protected)
 router.post('/confirm', protect, confirmPayment);
+
+// POST /api/payments/webhook - Stripe webhook (raw body parsed in server.js)
+router.post('/webhook', handleWebhook);
 
 module.exports = router;
