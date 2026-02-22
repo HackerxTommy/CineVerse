@@ -1,0 +1,51 @@
+# Render Blueprint — Docker-based deployment for CineVerse
+# Usage: Go to https://render.com/deploy → paste your GitHub repo URL
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  # ──────────────────────────────────────────
+  # Backend API Server (Docker)
+  # ──────────────────────────────────────────
+  - type: web
+    name: cineverse-server
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5000"
+      - key: SESSION_SECRET
+        generateValue: true       # Render auto-generates a random secret
+      - key: MONGO_URI
+        sync: false                # ⚠️ Set manually — MongoDB Atlas connection string
+      - key: CLIENT_URL
+        sync: false                # ⚠️ Set after client deploys (e.g. https://cineverse-client.onrender.com)
+      - key: GOOGLE_CLIENT_ID
+        sync: false                # Optional — Google OAuth
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false                # Optional — Stripe payments
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+  # ──────────────────────────────────────────
+  # Frontend Client (Docker + Nginx)
+  # ──────────────────────────────────────────
+  - type: web
+    name: cineverse-client
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./client/Dockerfile
+    dockerContext: ./client
+    envVars:
+      - key: VITE_API_URL
+        sync: false                # ⚠️ Set after server deploys (e.g. https://cineverse-server.onrender.com/api)

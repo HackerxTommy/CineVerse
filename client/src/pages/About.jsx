@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import AnimatedBackground from '../components/AnimatedBackground';
 
 const About = () => {

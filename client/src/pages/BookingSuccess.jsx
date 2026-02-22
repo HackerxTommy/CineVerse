@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
 

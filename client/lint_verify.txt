@@ -1,0 +1,12 @@
+
+C:\CineVerse\client\src\components\Navbar.jsx
+  29:5  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  34:8  warning  React Hook useEffect has a missing dependency: 'menuOpen'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\CineVerse\client\src\pages\SeatSelection.jsx
+  47:5  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  50:8  warning  React Hook useEffect has a missing dependency: 'fetchShow'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+Γ£û 4 problems (0 errors, 4 warnings)
+  0 errors and 2 warnings potentially fixable with the `--fix` option.
+

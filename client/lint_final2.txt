@@ -1,0 +1,9 @@
+
+C:\CineVerse\client\src\components\Navbar.jsx
+  34:8  warning  React Hook useEffect has a missing dependency: 'menuOpen'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\CineVerse\client\src\pages\SeatSelection.jsx
+  50:8  warning  React Hook useEffect has a missing dependency: 'fetchShow'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+Γ£û 2 problems (0 errors, 2 warnings)
+

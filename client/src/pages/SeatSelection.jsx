@@ -2,9 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+ 
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Seat pricing tiers
 const SEAT_TIERS = {
@@ -40,6 +42,9 @@ const SeatSelection = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
+     
+     
+     
     useEffect(() => {
         fetchShow();
     }, [showId]);

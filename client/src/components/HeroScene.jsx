@@ -9,7 +9,7 @@ import * as THREE from 'three';
 const FilmReel = ({ position, rotation, scale = 1, color = "#FFD700" }) => {
     const group = useRef();
 
-    useFrame((state) => {
+    useFrame(() => {
         // Slow, elegant rotation
         group.current.rotation.z += 0.005;
     });

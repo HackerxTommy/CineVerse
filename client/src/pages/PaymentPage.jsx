@@ -3,11 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import axios from 'axios';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import AnimatedBackground from '../components/AnimatedBackground';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Payment method icons
 const UPI_APPS = [
@@ -98,31 +99,41 @@ const PaymentForm = ({ clientSecret, showDetails, seats, totalAmount, onSuccess 
         const parts = upiId.split('@');
         if (parts.length !== 2 || !parts[0].trim()) {
             if (upiId.length > 2) {
-                setUpiVerifyStatus('invalid');
-                setUpiVerifyMsg('Format: yourname@bankhandle');
+                setTimeout(() => {
+                    setUpiVerifyStatus('invalid');
+                    setUpiVerifyMsg('Format: yourname@bankhandle');
+                }, 0);
             } else {
-                setUpiVerifyStatus('idle');
-                setUpiVerifyMsg('');
+                setTimeout(() => {
+                    setUpiVerifyStatus('idle');
+                    setUpiVerifyMsg('');
+                }, 0);
             }
             return;
         }
 
         const [username, handle] = parts;
         if (username.length < 3) {
-            setUpiVerifyStatus('invalid');
-            setUpiVerifyMsg('Username must be at least 3 characters');
+            setTimeout(() => {
+                setUpiVerifyStatus('invalid');
+                setUpiVerifyMsg('Username must be at least 3 characters');
+            }, 0);
             return;
         }
 
         if (!handle) {
-            setUpiVerifyStatus('idle');
-            setUpiVerifyMsg('');
+            setTimeout(() => {
+                setUpiVerifyStatus('idle');
+                setUpiVerifyMsg('');
+            }, 0);
             return;
         }
 
         // Start verification (debounced)
-        setUpiVerifyStatus('checking');
-        setUpiVerifyMsg('Verifying UPI ID...');
+        setTimeout(() => {
+            setUpiVerifyStatus('checking');
+            setUpiVerifyMsg('Verifying UPI ID...');
+        }, 0);
 
         const timer = setTimeout(() => {
             const isValidHandle = VALID_UPI_HANDLES.includes(handle.toLowerCase());
@@ -700,7 +711,8 @@ const PaymentPage = () => {
     const { user } = useAuth();
     const [clientSecret, setClientSecret] = useState('');
     const [loading, setLoading] = useState(true);
-    const [stripeKey, setStripeKey] = useState('');
+
+    const [_stripeKey, setStripeKey] = useState('');
     const [initError, setInitError] = useState('');
 
     const { showId, selectedSeats, totalAmount, show } = location.state || {};

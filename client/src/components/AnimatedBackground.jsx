@@ -3,25 +3,21 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, MeshDistortMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
+// Pre-generate random values at module scope (outside render) to satisfy React purity rules
+const INITIAL_RANDOM_VALUES = Array.from({ length: 6 }, () => ({
+    x: (Math.random() - 0.5) * 15,
+    y: (Math.random() - 0.5) * 10,
+    z: Math.random() * -5,
+    scale: 0.5 + Math.random() * 0.8,
+}));
+
 // Floating glass-like geometric shapes (No particles, just classy 3D)
 const FloatingShapes = ({ variant }) => {
     const groupRef = useRef();
 
-    const [randomValues, setRandomValues] = useState([]);
-
-    useEffect(() => {
-        setRandomValues(
-            Array.from({ length: 6 }, () => ({
-                x: (Math.random() - 0.5) * 15,
-                y: (Math.random() - 0.5) * 10,
-                z: Math.random() * -5,
-                scale: 0.5 + Math.random() * 0.8,
-            }))
-        );
-    }, []);
+    const randomValues = INITIAL_RANDOM_VALUES;
 
     const shapes = useMemo(() => {
-        if (randomValues.length === 0) return [];
         const colors = {
             default: ['#e50914', '#b20710'],
             blue: ['#00f2ea', '#0088ff'],

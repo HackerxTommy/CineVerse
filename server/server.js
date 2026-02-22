@@ -16,6 +16,11 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
+// Trust Render's reverse proxy (needed for secure cookies over HTTPS)
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
+
 // Initialize WebSocket (Socket.IO)
 const io = initializeWebSocket(server);
 app.set('io', io);
@@ -41,6 +46,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Session for Passport
+const isProduction = process.env.NODE_ENV === 'production';
 app.use(session({
     secret: process.env.SESSION_SECRET || 'fallback_secret_key_change_in_production',
     resave: false,
@@ -48,7 +54,8 @@ app.use(session({
     cookie: {
         maxAge: 1000 * 60 * 60 * 24, // 1 day
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production'
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax' // 'none' needed for cross-origin Render subdomains
     }
 }));
 

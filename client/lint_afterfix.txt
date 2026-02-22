@@ -1,0 +1,26 @@
+
+C:\CineVerse\client\src\components\Navbar.jsx
+  33:8  warning  React Hook useEffect has a missing dependency: 'menuOpen'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\CineVerse\client\src\pages\PaymentPage.jsx
+  117:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  115 |         const [username, handle] = parts;
+  116 |         if (username.length < 3) {
+> 117 |             setUpiVerifyStatus('invalid');
+      |             ^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  118 |             setUpiVerifyMsg('Username must be at least 3 characters');
+  119 |             return;
+  120 |         }  react-hooks/set-state-in-effect
+
+C:\CineVerse\client\src\pages\SeatSelection.jsx
+  49:8  warning  React Hook useEffect has a missing dependency: 'fetchShow'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+Γ£û 3 problems (1 error, 2 warnings)
+
