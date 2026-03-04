@@ -28,6 +28,8 @@ COPY server/ .
 # Copy built client into server's public folder
 COPY --from=client-build /app/client/dist ./public
 
+ENV NODE_ENV=production
+
 EXPOSE 5000
 
 CMD ["node", "server.js"]
