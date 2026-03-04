@@ -11,7 +11,7 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /api/auth/csrf-token
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production

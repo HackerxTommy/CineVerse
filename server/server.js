@@ -113,23 +113,30 @@ app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/2fa', require('./routes/twoFactorRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
-// ─── Production: Serve React client ───
+// Health check endpoint (always available)
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'CineVerse API is running', version: '2.0.0' });
+});
+
+// ─── Serve React client if built files exist ───
 const path = require('path');
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, 'public')));
+const fs = require('fs');
+const publicPath = path.join(__dirname, 'public');
+if (fs.existsSync(path.join(publicPath, 'index.html'))) {
+    app.use(express.static(publicPath));
 
     // SPA fallback — any non-API route serves the React app
     app.get(/^\/(?!api\/).*/, (req, res) => {
-        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+        res.sendFile(path.join(publicPath, 'index.html'));
     });
 } else {
-    // Health check (dev only — in prod the root serves the React app)
+    // No built client — show health check at root (dev mode)
     app.get('/', (req, res) => {
-        res.json({ status: 'ok', message: 'CineVerse API is running', version: '2.0.0' });
+        res.json({ status: 'ok', message: 'CineVerse API is running (no client build found)', version: '2.0.0' });
     });
 }
 
-// 404 Handler (only hits for unmatched /api/* routes in production)
+// 404 Handler (only hits for unmatched /api/* routes when client is bundled)
 app.use((req, res, next) => {
     res.status(404).json({ message: `Route ${req.originalUrl} not found` });
 });
