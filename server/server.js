@@ -4,6 +4,8 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const passport = require('passport');
 const session = require('express-session');
+const cookieParser = require('cookie-parser');
+const { doubleCsrf } = require('csrf-csrf');
 const connectDB = require('./config/db');
 const { initializeWebSocket } = require('./config/websocket');
 
@@ -17,7 +19,8 @@ const app = express();
 const server = http.createServer(app);
 
 // Trust Render's reverse proxy (needed for secure cookies over HTTPS)
-if (process.env.NODE_ENV === 'production') {
+const isProduction = process.env.NODE_ENV === 'production';
+if (isProduction) {
     app.set('trust proxy', 1);
 }
 
@@ -39,6 +42,9 @@ app.use(cors({
     credentials: true
 }));
 
+// Cookie parser (required for CSRF double-submit cookie pattern)
+app.use(cookieParser());
+
 // Stripe webhook needs raw body — mount BEFORE express.json()
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
@@ -46,7 +52,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Session for Passport
-const isProduction = process.env.NODE_ENV === 'production';
 app.use(session({
     secret: process.env.SESSION_SECRET || 'fallback_secret_key_change_in_production',
     resave: false,
@@ -55,7 +60,7 @@ app.use(session({
         maxAge: 1000 * 60 * 60 * 24, // 1 day
         httpOnly: true,
         secure: isProduction,
-        sameSite: isProduction ? 'none' : 'lax' // 'none' needed for cross-origin Render subdomains
+        sameSite: isProduction ? 'none' : 'lax'
     }
 }));
 
@@ -63,6 +68,41 @@ app.use(session({
 require('./config/passport')(passport);
 app.use(passport.initialize());
 app.use(passport.session());
+
+// ─── CSRF Protection (Double-Submit Cookie Pattern) ───
+const { generateToken, doubleCsrfProtection } = doubleCsrf({
+    getSecret: () => process.env.SESSION_SECRET || 'csrf-secret-fallback',
+    cookieName: '__csrf',
+    cookieOptions: {
+        httpOnly: true,
+        sameSite: isProduction ? 'none' : 'lax',
+        secure: isProduction,
+        path: '/',
+    },
+    size: 64,
+    getTokenFromRequest: (req) => req.headers['x-csrf-token'],
+});
+
+// Endpoint to get a CSRF token (client calls this on app load)
+app.get('/api/auth/csrf-token', (req, res) => {
+    const token = generateToken(req, res);
+    res.json({ csrfToken: token });
+});
+
+// Apply CSRF protection to all state-changing routes
+// Skip: GET, HEAD, OPTIONS (safe methods) and the Stripe webhook
+app.use((req, res, next) => {
+    // Skip safe methods
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+        return next();
+    }
+    // Skip Stripe webhook (uses its own signature verification)
+    if (req.path === '/api/payments/webhook') {
+        return next();
+    }
+    // Validate CSRF token
+    doubleCsrfProtection(req, res, next);
+});
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -73,12 +113,23 @@ app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/2fa', require('./routes/twoFactorRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
-// Health check
-app.get('/', (req, res) => {
-    res.json({ status: 'ok', message: 'CineVerse API is running', version: '2.0.0' });
-});
+// ─── Production: Serve React client ───
+const path = require('path');
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, 'public')));
 
-// 404 Handler
+    // SPA fallback — any non-API route serves the React app
+    app.get(/^\/(?!api\/).*/, (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    });
+} else {
+    // Health check (dev only — in prod the root serves the React app)
+    app.get('/', (req, res) => {
+        res.json({ status: 'ok', message: 'CineVerse API is running', version: '2.0.0' });
+    });
+}
+
+// 404 Handler (only hits for unmatched /api/* routes in production)
 app.use((req, res, next) => {
     res.status(404).json({ message: `Route ${req.originalUrl} not found` });
 });
