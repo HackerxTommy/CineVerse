@@ -76,7 +76,9 @@ export const AuthProvider = ({ children }) => {
     };
 
     const loginWithGoogle = () => {
-        window.location.href = `${API_URL}/auth/google`;
+        const isVercel = window.location.hostname !== 'localhost';
+        const serverUrl = isVercel ? 'https://cineverse-world.vercel.app/api' : 'http://localhost:5000/api';
+        window.location.href = `${serverUrl}/auth/google`;
     };
 
     const logout = async () => {

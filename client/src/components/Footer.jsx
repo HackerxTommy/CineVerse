@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { FaLinkedinIn, FaTwitter, FaInstagram, FaYoutube } from 'react-icons/fa';
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
@@ -91,10 +92,10 @@ const Footer = () => {
                         <h4 style={{ color: '#fff', marginBottom: '20px', fontSize: '1rem' }}>Follow Us</h4>
                         <div style={{ display: 'flex', gap: '15px' }}>
                             {[
-                                { icon: '📘', url: 'https://linkedin.in/vishalgupta0001' },
-                                { icon: '🐦', url: 'https://twitter.com/HackerxTommy' },
-                                { icon: '📸', url: 'https://instagram.com/vishal_gupta_ethhacker' },
-                                { icon: '▶️', url: '#' }
+                                { icon: <FaLinkedinIn />, url: 'https://linkedin.in/vishalgupta0001' },
+                                { icon: <FaTwitter />, url: 'https://twitter.com/HackerxTommy' },
+                                { icon: <FaInstagram />, url: 'https://instagram.com/vishal_gupta_ethhacker' },
+                                { icon: <FaYoutube />, url: '#' }
                             ].map((social, i) => (
                                 <motion.a
                                     key={i}

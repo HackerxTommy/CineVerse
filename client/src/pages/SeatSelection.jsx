@@ -39,6 +39,7 @@ const SeatSelection = () => {
     const [timerActive, setTimerActive] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [showTrailer, setShowTrailer] = useState(false);
 
      
      
@@ -155,6 +156,15 @@ const SeatSelection = () => {
 
     const youtubeId = show?.movie?.trailer ? getYouTubeId(show.movie.trailer) : null;
 
+    useEffect(() => {
+        if (!loading && show) {
+            const timer = setTimeout(() => {
+                setShowTrailer(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [loading, show]);
+
     if (loading && !show) {
         return (
             <div className="container" style={{ paddingTop: '120px', textAlign: 'center' }}>
@@ -190,17 +200,42 @@ const SeatSelection = () => {
             position: 'relative',
             overflow: 'hidden'
         }}>
-            {/* Movie Trailer Background */}
-            {youtubeId && (
+            {/* Movie Poster Cover */}
+            {show?.movie?.poster && (
                 <div style={{
                     position: 'fixed',
                     inset: 0,
-                    overflow: 'hidden',
-                    zIndex: 0,
-                    opacity: 0.15, // Reduced from 0.25
+                    zIndex: -1,
+                    opacity: 0.25,
                     pointerEvents: 'none',
-                    filter: 'grayscale(80%) contrast(1.2)' // Added filter for darker tone
+                    backgroundImage: `url(${show?.movie?.poster})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    filter: 'grayscale(80%) contrast(1.2)'
                 }}>
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, #000 85%)'
+                    }} />
+                </div>
+            )}
+
+            {/* Movie Trailer Background */}
+            {youtubeId && showTrailer && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.15 }}
+                    transition={{ duration: 1.5 }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        overflow: 'hidden',
+                        zIndex: 0,
+                        pointerEvents: 'none',
+                        filter: 'grayscale(80%) contrast(1.2)' // Added filter for darker tone
+                    }}
+                >
                     <iframe
                         src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${youtubeId}&modestbranding=1&showinfo=0`}
                         style={{
@@ -218,7 +253,7 @@ const SeatSelection = () => {
                         inset: 0,
                         background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, #000 85%)' // Darker gradient
                     }} />
-                </div>
+                </motion.div>
             )}
 
             {/* Movie Poster Floating Effect */}

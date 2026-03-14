@@ -106,7 +106,10 @@ exports.googleAuth = passport.authenticate('google', { scope: ['profile', 'email
 // @route   GET /api/auth/google/callback
 exports.googleAuthCallback = (req, res, next) => {
     passport.authenticate('google', (err, user, info) => {
-        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        const isVercel = process.env.VERCEL === '1';
+        const clientUrl = isVercel 
+            ? 'https://cineverse-world.vercel.app' 
+            : (process.env.CLIENT_URL || 'http://localhost:5173');
 
         if (err) {
             console.error('Google auth error:', err);

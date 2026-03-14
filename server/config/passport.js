@@ -28,10 +28,14 @@ module.exports = function (passport) {
 
     console.log('✓ Google OAuth configured');
 
+    const callbackURL = process.env.VERCEL === '1'
+        ? `${process.env.SERVER_URL || 'https://cineverse-world.vercel.app'}/api/auth/google/callback`
+        : '/api/auth/google/callback';
+
     passport.use(new GoogleStrategy({
         clientID,
         clientSecret,
-        callbackURL: '/api/auth/google/callback',
+        callbackURL,
         proxy: true
     },
         async (accessToken, refreshToken, profile, done) => {
