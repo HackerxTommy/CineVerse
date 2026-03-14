@@ -24,6 +24,7 @@ const MovieDetails = () => {
     const [error, setError] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
     const [showTrailer, setShowTrailer] = useState(false);
+    const [ambientTrailerReady, setAmbientTrailerReady] = useState(false);
     const trailerRef = useRef(null);
 
     const fetchData = useCallback(async () => {
@@ -53,6 +54,15 @@ const MovieDetails = () => {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    useEffect(() => {
+        if (!loading && movie) {
+            const timer = setTimeout(() => {
+                setAmbientTrailerReady(true);
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [loading, movie]);
 
     // Group shows by date
     const showsByDate = shows.reduce((acc, show) => {
@@ -178,14 +188,18 @@ const MovieDetails = () => {
                 }}
             >
                 {/* Ambient trailer video background (muted) */}
-                {youtubeId && !showTrailer && (
-                    <div style={{
-                        position: 'absolute',
-                        inset: 0,
-                        overflow: 'hidden',
-                        opacity: 0.25,
-                        pointerEvents: 'none'
-                    }}>
+                {youtubeId && !showTrailer && ambientTrailerReady && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 0.25 }}
+                        transition={{ duration: 1.5 }}
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            overflow: 'hidden',
+                            pointerEvents: 'none'
+                        }}
+                    >
                         <iframe
                             src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${youtubeId}&modestbranding=1&showinfo=0`}
                             style={{
@@ -198,7 +212,7 @@ const MovieDetails = () => {
                             }}
                             allow="autoplay"
                         />
-                    </div>
+                    </motion.div>
                 )}
 
                 {/* Animated overlay particles */}
