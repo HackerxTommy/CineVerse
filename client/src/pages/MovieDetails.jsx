@@ -52,6 +52,7 @@ const MovieDetails = () => {
     }, [id, setMovie, setShows, setSelectedDate, setError, setLoading]);
 
     useEffect(() => {
+        window.scrollTo(0, 0);
         fetchData();
     }, [fetchData]);
 
@@ -222,7 +223,7 @@ const MovieDetails = () => {
                         style={{
                             position: 'absolute',
                             inset: 0,
-                            background: `url(${backdrop || poster})`,
+                            backgroundImage: `url(${backdrop || poster})`,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center top',
                             backgroundAttachment: 'fixed',
