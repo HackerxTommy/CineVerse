@@ -8,31 +8,21 @@ const connectDB = async () => {
             throw new Error('MONGO_URI is not defined in environment variables');
         }
 
+        console.log('🔄 Attempting to connect to MongoDB...');
         const conn = await mongoose.connect(mongoUri, {
-            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-            maxPoolSize: 10, // Maintain up to 10 socket connections
-            socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+            serverSelectionTimeoutMS: 10000, // Increased to 10s for slow cold starts
+            maxPoolSize: 10,
+            socketTimeoutMS: 45000,
+            family: 4 // Force IPv4 to avoid some Vercel/Atlas networking issues
         });
 
-        console.log(`MongoDB Connected: ${conn.connection.host}`);
-
-        // Handle connection events
-        mongoose.connection.on('error', (err) => {
-            console.error('MongoDB connection error:', err);
-        });
-
-        mongoose.connection.on('disconnected', () => {
-            console.warn('MongoDB disconnected. Attempting to reconnect...');
-        });
-
-        mongoose.connection.on('reconnected', () => {
-            console.log('MongoDB reconnected');
-        });
-
+        console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
-        console.error(`MongoDB Connection Error: ${error.message}`);
-        // Let the application handle the error instead of exiting process
-        // In Vercel, exiting can cause unnecessary cold starts or 500 crashes
+        console.error(`❌ MongoDB Connection Error: ${error.message}`);
+        // Log more details if possible
+        if (error.message.includes('timeout')) {
+            console.error('💡 TIP: Check if your MongoDB Atlas IP Whitelist allows access from anywhere (0.0.0.0/0).');
+        }
     }
 };
 
