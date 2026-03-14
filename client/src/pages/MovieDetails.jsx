@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/api';
  
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedBackground from '../components/AnimatedBackground';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Using shared api instance
 
 // Helper to extract YouTube video ID
 const getYouTubeId = (url) => {
@@ -30,8 +30,8 @@ const MovieDetails = () => {
         try {
             setLoading(true);
             const [movieRes, showsRes] = await Promise.all([
-                axios.get(`${API_URL}/movies/${id}`),
-                axios.get(`${API_URL}/movies/${id}/shows`)
+                api.get(`/movies/${id}`),
+                api.get(`/movies/${id}/shows`)
             ]);
             setMovie(movieRes.data);
             setShows(showsRes.data);

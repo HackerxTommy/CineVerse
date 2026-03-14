@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -13,7 +13,7 @@ export const useAuth = () => {
     return context;
 };
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = async () => {
         try {
-            const res = await axios.get(`${API_URL}/auth/me`, { withCredentials: true });
+            const res = await api.get('/auth/me');
             setUser(res.data);
         } catch {
             setUser(null);
@@ -38,8 +38,8 @@ export const AuthProvider = ({ children }) => {
     const register = async (name, email, password) => {
         setError(null);
         try {
-            const res = await axios.post(
-                `${API_URL}/auth/register`,
+            const res = await api.post(
+                '/auth/register',
                 { name, email, password },
                 { withCredentials: true }
             );
@@ -55,8 +55,8 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         setError(null);
         try {
-            const res = await axios.post(
-                `${API_URL}/auth/login`,
+            const res = await api.post(
+                '/auth/login',
                 { email, password },
                 { withCredentials: true }
             );
@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            await axios.get(`${API_URL}/auth/logout`, { withCredentials: true });
+            await api.get('/auth/logout');
         } catch (err) {
             console.error('Logout error:', err);
         } finally {

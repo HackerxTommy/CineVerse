@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import MovieCard from '../components/MovieCard';
 import HeroScene from '../components/HeroScene';
  
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Using shared api instance
 
 const Home = () => {
     const [movies, setMovies] = useState([]);
@@ -20,7 +20,7 @@ const Home = () => {
     const fetchMovies = async () => {
         try {
             setLoading(true);
-            const res = await axios.get(`${API_URL}/movies`);
+            const res = await api.get('/movies');
             setMovies(res.data);
             setError(null);
         } catch (err) {
