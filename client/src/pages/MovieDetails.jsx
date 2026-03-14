@@ -180,37 +180,10 @@ const MovieDetails = () => {
                     position: 'relative',
                     display: 'flex',
                     alignItems: 'flex-end',
-                    paddingBottom: '60px'
+                    paddingBottom: '60px',
+                    zIndex: 0 // Force stacking context so negative children don't hide behind body
                 }}
             >
-                {/* Poster Background layer (fades out when trailer starts) */}
-                {(backdrop || poster) && (
-                    <motion.div
-                        initial={{ opacity: 1 }}
-                        animate={{ opacity: ambientTrailerReady ? 0 : 1 }}
-                        transition={{ duration: 1.5 }}
-                        style={{
-                            position: 'absolute',
-                            inset: 0,
-                            background: `url(${backdrop || poster})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center top',
-                            backgroundAttachment: 'fixed',
-                            zIndex: -2,
-                            pointerEvents: 'none'
-                        }}
-                    />
-                )}
-
-                {/* Dark Gradient Overlay for Readability (persists) */}
-                <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 50%, #000 100%)',
-                    zIndex: -1,
-                    pointerEvents: 'none'
-                }} />
-
                 {/* Ambient trailer video background (muted) */}
                 {youtubeId && !showTrailer && ambientTrailerReady && (
                     <motion.div
@@ -239,6 +212,34 @@ const MovieDetails = () => {
                         />
                     </motion.div>
                 )}
+
+                {/* Poster Background layer (fades out when trailer starts) */}
+                {(backdrop || poster) && (
+                    <motion.div
+                        initial={{ opacity: 1 }}
+                        animate={{ opacity: ambientTrailerReady ? 0 : 1 }}
+                        transition={{ duration: 1.5 }}
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: `url(${backdrop || poster})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center top',
+                            backgroundAttachment: 'fixed',
+                            zIndex: -2,
+                            pointerEvents: 'none'
+                        }}
+                    />
+                )}
+
+                {/* Dark Gradient Overlay for Readability (persists) */}
+                <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 50%, #000 100%)',
+                    zIndex: -1,
+                    pointerEvents: 'none'
+                }} />
 
                 {/* Animated overlay particles */}
                 <div style={{

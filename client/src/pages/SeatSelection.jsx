@@ -198,33 +198,9 @@ const SeatSelection = () => {
             minHeight: '100vh',
             background: 'linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 100%)',
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            zIndex: 0 // Force stacking context
         }}>
-            {/* Movie Poster Cover */}
-            {show && show.movie && show.movie.poster && (
-                <motion.div
-                    initial={{ opacity: 0.25 }}
-                    animate={{ opacity: showTrailer ? 0 : 0.25 }}
-                    transition={{ duration: 1.5 }}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        zIndex: -1,
-                        pointerEvents: 'none',
-                        backgroundImage: `url(${show.movie.poster})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        filter: 'grayscale(80%) contrast(1.2)'
-                    }}
-                >
-                    <div style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, #000 85%)'
-                    }} />
-                </motion.div>
-            )}
-
             {/* Movie Trailer Background */}
             {youtubeId && showTrailer && (
                 <motion.div
@@ -252,6 +228,31 @@ const SeatSelection = () => {
                         }}
                         allow="autoplay"
                     />
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, #000 85%)'
+                    }} />
+                </motion.div>
+            )}
+
+            {/* Movie Poster Cover */}
+            {show && show.movie && show.movie.poster && (
+                <motion.div
+                    initial={{ opacity: 0.25 }}
+                    animate={{ opacity: showTrailer ? 0 : 0.25 }}
+                    transition={{ duration: 1.5 }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: -1,
+                        pointerEvents: 'none',
+                        backgroundImage: `url(${show.movie.poster})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        filter: 'grayscale(80%) contrast(1.2)'
+                    }}
+                >
                     <div style={{
                         position: 'absolute',
                         inset: 0,
