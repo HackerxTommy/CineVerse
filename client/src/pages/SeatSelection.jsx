@@ -1,12 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
  
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import api from '../utils/api';
 
 // Seat pricing tiers
 const SEAT_TIERS = {
@@ -64,7 +62,7 @@ const SeatSelection = () => {
     const fetchShow = async () => {
         try {
             setLoading(true);
-            const res = await axios.get(`${API_URL}/shows/${showId}`);
+            const res = await api.get(`/shows/${showId}`);
             setShow(res.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to load show');
@@ -123,7 +121,7 @@ const SeatSelection = () => {
 
         setLoading(true);
         try {
-            await axios.post(`${API_URL}/bookings/lock`, { showId, selectedSeats }, { withCredentials: true });
+            await api.post('/bookings/lock', { showId, selectedSeats });
             setTimerActive(true);
 
             // Navigate to payment page

@@ -4,9 +4,7 @@ import { useAuth } from '../context/AuthContext';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedBackground from '../components/AnimatedBackground';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import api from '../utils/api';
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -50,10 +48,10 @@ const Login = () => {
             if (isLogin) {
                 if (require2FA) {
                     // Verify 2FA
-                    await axios.post(`${API_URL}/two-factor/validate`, {
+                    await api.post('/two-factor/validate', {
                         userId,
                         token: twoFactorCode
-                    }, { withCredentials: true });
+                    });
 
                     // Refresh auth state and redirect
                     await checkAuth();

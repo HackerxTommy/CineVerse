@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import axios from 'axios';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import AnimatedBackground from '../components/AnimatedBackground';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import api from '../utils/api';
 
 // Payment method icons
 const UPI_APPS = [
@@ -738,10 +736,9 @@ const PaymentPage = () => {
     const initializePayment = React.useCallback(async () => {
         try {
             // Validate seat lock before payment
-            const lockCheck = await axios.post(
-                `${API_URL}/bookings/verify-lock`,
-                { showId, seats: selectedSeats },
-                { withCredentials: true }
+            const lockCheck = await api.post(
+                '/bookings/verify-lock',
+                { showId, seats: selectedSeats }
             ).catch(() => ({ data: { valid: true } })); // Fallback if endpoint doesn't exist
 
             if (lockCheck.data && !lockCheck.data.valid) {
@@ -751,7 +748,7 @@ const PaymentPage = () => {
             }
 
             // Get Stripe config
-            const configRes = await axios.get(`${API_URL}/payments/config`);
+            const configRes = await api.get('/payments/config');
             setStripeKey(configRes.data.publishableKey);
 
             if (configRes.data.publishableKey) {
@@ -759,10 +756,9 @@ const PaymentPage = () => {
             }
 
             // Create payment intent
-            const intentRes = await axios.post(
-                `${API_URL}/payments/create-intent`,
-                { showId, seats: selectedSeats, totalAmount },
-                { withCredentials: true }
+            const intentRes = await api.post(
+                '/payments/create-intent',
+                { showId, seats: selectedSeats, totalAmount }
             );
 
             setClientSecret(intentRes.data.clientSecret);
@@ -776,15 +772,14 @@ const PaymentPage = () => {
 
     const handlePaymentSuccess = async (paymentIntentId) => {
         try {
-            const res = await axios.post(
-                `${API_URL}/payments/confirm`,
+            const res = await api.post(
+                '/payments/confirm',
                 {
                     paymentIntentId,
                     showId,
                     seats: selectedSeats,
                     totalAmount
-                },
-                { withCredentials: true }
+                }
             );
 
             navigate('/booking-success', {

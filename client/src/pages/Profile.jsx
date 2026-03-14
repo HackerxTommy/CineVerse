@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
  
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedBackground from '../components/AnimatedBackground';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import api from '../utils/api';
 
 const Profile = () => {
     const { user, logout } = useAuth();
@@ -48,7 +46,7 @@ const Profile = () => {
 
     const fetch2FAStatus = async () => {
         try {
-            const res = await axios.get(`${API_URL}/2fa/status`, { withCredentials: true });
+            const res = await api.get('/2fa/status');
             setTwoFAStatus(res.data.enabled);
         } catch {
             console.error('Failed to fetch 2FA status');
@@ -75,7 +73,7 @@ const Profile = () => {
         setMessage({ type: '', text: '' });
 
         try {
-            const res = await axios.post(`${API_URL}/2fa/setup`, {}, { withCredentials: true });
+            const res = await api.post('/2fa/setup', {});
             setQrCode(res.data.qrCode);
             setSecret(res.data.secret);
             setMessage({ type: 'info', text: 'Scan the QR code with Google Authenticator' });
@@ -94,7 +92,7 @@ const Profile = () => {
 
         setLoading(true);
         try {
-            const res = await axios.post(`${API_URL}/2fa/verify`, { token: verifyToken }, { withCredentials: true });
+            const res = await api.post('/2fa/verify', { token: verifyToken });
             setTwoFAStatus(true);
             setBackupCodes(res.data.backupCodes);
             setShowBackupCodes(true);
@@ -115,7 +113,7 @@ const Profile = () => {
 
         setLoading(true);
         try {
-            await axios.post(`${API_URL}/2fa/disable`, { token }, { withCredentials: true });
+            await api.post('/2fa/disable', { token });
             setTwoFAStatus(false);
             setMessage({ type: 'success', text: '2FA disabled successfully' });
         } catch (err) {
