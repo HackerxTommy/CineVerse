@@ -177,27 +177,50 @@ const MovieDetails = () => {
                 transition={{ duration: 1 }}
                 style={{
                     minHeight: '75vh',
-                    background: `linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 50%, #000 100%), url(${backdrop || poster})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center top',
-                    backgroundAttachment: 'fixed',
                     position: 'relative',
                     display: 'flex',
                     alignItems: 'flex-end',
                     paddingBottom: '60px'
                 }}
             >
+                {/* Poster Background layer (fades out when trailer starts) */}
+                <motion.div
+                    initial={{ opacity: 1 }}
+                    animate={{ opacity: ambientTrailerReady ? 0 : 1 }}
+                    transition={{ duration: 1.5 }}
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: `url(${backdrop || poster})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center top',
+                        backgroundAttachment: 'fixed',
+                        zIndex: -2,
+                        pointerEvents: 'none'
+                    }}
+                />
+
+                {/* Dark Gradient Overlay for Readability (persists) */}
+                <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 50%, #000 100%)',
+                    zIndex: -1,
+                    pointerEvents: 'none'
+                }} />
+
                 {/* Ambient trailer video background (muted) */}
                 {youtubeId && !showTrailer && ambientTrailerReady && (
                     <motion.div
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: 0.25 }}
+                        animate={{ opacity: 0.35 }}
                         transition={{ duration: 1.5 }}
                         style={{
                             position: 'absolute',
                             inset: 0,
                             overflow: 'hidden',
-                            pointerEvents: 'none'
+                            pointerEvents: 'none',
+                            zIndex: -3
                         }}
                     >
                         <iframe

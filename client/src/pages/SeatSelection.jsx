@@ -202,38 +202,42 @@ const SeatSelection = () => {
         }}>
             {/* Movie Poster Cover */}
             {show?.movie?.poster && (
-                <div style={{
-                    position: 'fixed',
-                    inset: 0,
-                    zIndex: -1,
-                    opacity: 0.25,
-                    pointerEvents: 'none',
-                    backgroundImage: `url(${show?.movie?.poster})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    filter: 'grayscale(80%) contrast(1.2)'
-                }}>
+                <motion.div
+                    initial={{ opacity: 0.25 }}
+                    animate={{ opacity: showTrailer ? 0 : 0.25 }}
+                    transition={{ duration: 1.5 }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: -1,
+                        pointerEvents: 'none',
+                        backgroundImage: `url(${show?.movie?.poster})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        filter: 'grayscale(80%) contrast(1.2)'
+                    }}
+                >
                     <div style={{
                         position: 'absolute',
                         inset: 0,
                         background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, #000 85%)'
                     }} />
-                </div>
+                </motion.div>
             )}
 
             {/* Movie Trailer Background */}
             {youtubeId && showTrailer && (
                 <motion.div
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.15 }}
+                    animate={{ opacity: 0.25 }}
                     transition={{ duration: 1.5 }}
                     style={{
                         position: 'fixed',
                         inset: 0,
                         overflow: 'hidden',
-                        zIndex: 0,
+                        zIndex: -2,
                         pointerEvents: 'none',
-                        filter: 'grayscale(80%) contrast(1.2)' // Added filter for darker tone
+                        filter: 'grayscale(80%) contrast(1.2)'
                     }}
                 >
                     <iframe
@@ -251,7 +255,7 @@ const SeatSelection = () => {
                     <div style={{
                         position: 'absolute',
                         inset: 0,
-                        background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, #000 85%)' // Darker gradient
+                        background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, #000 85%)'
                     }} />
                 </motion.div>
             )}
