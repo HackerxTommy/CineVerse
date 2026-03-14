@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import ScrollToTop from './components/ScrollToTop';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -20,6 +21,7 @@ function App() {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
       <main style={{ flex: 1 }}>
+        <ScrollToTop />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />

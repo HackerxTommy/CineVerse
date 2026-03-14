@@ -202,10 +202,10 @@ const SeatSelection = () => {
             zIndex: 0 // Force stacking context
         }}>
             {/* Movie Trailer Background */}
-            {youtubeId && showTrailer && (
+            {youtubeId && (
                 <motion.div
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.25 }}
+                    animate={{ opacity: showTrailer ? 0.25 : 0 }}
                     transition={{ duration: 1.5 }}
                     style={{
                         position: 'fixed',
@@ -237,29 +237,32 @@ const SeatSelection = () => {
             )}
 
             {/* Movie Poster Cover */}
-            {show && show.movie && show.movie.poster && (
-                <motion.div
-                    initial={{ opacity: 0.25 }}
-                    animate={{ opacity: showTrailer ? 0 : 0.25 }}
-                    transition={{ duration: 1.5 }}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        zIndex: -1,
-                        pointerEvents: 'none',
-                        backgroundImage: `url(${show.movie.poster})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        filter: 'grayscale(80%) contrast(1.2)'
-                    }}
-                >
-                    <div style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, #000 85%)'
-                    }} />
-                </motion.div>
-            )}
+            <AnimatePresence>
+                {show && show.movie && show.movie.poster && !showTrailer && (
+                    <motion.div
+                        key="seat-poster"
+                        initial={{ opacity: 0.25 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 1.5 }}
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: -1,
+                            pointerEvents: 'none',
+                            backgroundImage: `url(${show.movie.poster})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            filter: 'grayscale(80%) contrast(1.2)'
+                        }}
+                    >
+                        <div style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, #000 85%)'
+                        }} />
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Movie Poster Floating Effect */}
             {show?.movie?.poster && (

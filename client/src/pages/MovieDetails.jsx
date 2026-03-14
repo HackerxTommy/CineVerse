@@ -185,11 +185,11 @@ const MovieDetails = () => {
                     zIndex: 0 // Force stacking context so negative children don't hide behind body
                 }}
             >
-                {/* Ambient trailer video background (muted) */}
-                {youtubeId && !showTrailer && ambientTrailerReady && (
+                {/* Ambient trailer video background (muted) - Always mount to buffer, but fade in later */}
+                {youtubeId && !showTrailer && (
                     <motion.div
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: 0.35 }}
+                        animate={{ opacity: ambientTrailerReady ? 0.35 : 0 }}
                         transition={{ duration: 1.5 }}
                         style={{
                             position: 'absolute',
@@ -214,24 +214,27 @@ const MovieDetails = () => {
                     </motion.div>
                 )}
 
-                {/* Poster Background layer (fades out when trailer starts) */}
-                {(backdrop || poster) && (
-                    <motion.div
-                        initial={{ opacity: 1 }}
-                        animate={{ opacity: ambientTrailerReady ? 0 : 1 }}
-                        transition={{ duration: 1.5 }}
-                        style={{
-                            position: 'absolute',
-                            inset: 0,
-                            backgroundImage: `url(${backdrop || poster})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center top',
-                            backgroundAttachment: 'fixed',
-                            zIndex: -2,
-                            pointerEvents: 'none'
-                        }}
-                    />
-                )}
+                {/* Poster Background layer (fades out and unmounts when trailer starts) */}
+                <AnimatePresence>
+                    {(backdrop || poster) && !ambientTrailerReady && (
+                        <motion.div
+                            key="hero-poster"
+                            initial={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 1.5 }}
+                            style={{
+                                position: 'absolute',
+                                inset: 0,
+                                backgroundImage: `url(${backdrop || poster})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center top',
+                                backgroundAttachment: 'fixed',
+                                zIndex: -2,
+                                pointerEvents: 'none'
+                            }}
+                        />
+                    )}
+                </AnimatePresence>
 
                 {/* Dark Gradient Overlay for Readability (persists) */}
                 <div style={{

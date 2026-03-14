@@ -1,12 +1,15 @@
 const Movie = require('../models/Movie');
 const Show = require('../models/Show');
-const axios = require('axios');
+const { getOrSetCache } = require('../middleware/cacheMiddleware');
 
 // @desc    Get all movies
 // @route   GET /api/movies
 exports.getMovies = async (req, res, next) => {
     try {
-        const movies = await Movie.find({}).sort({ releaseDate: -1 });
+        const movies = await getOrSetCache('cache:movies:all', async () => {
+            return await Movie.find({}).sort({ releaseDate: -1 });
+        }, 3600); // Cache for 1 hour
+
         res.json(movies);
     } catch (err) {
         next(err);
@@ -17,7 +20,11 @@ exports.getMovies = async (req, res, next) => {
 // @route   GET /api/movies/:id
 exports.getMovieById = async (req, res, next) => {
     try {
-        const movie = await Movie.findById(req.params.id);
+        const movieId = req.params.id;
+        const movie = await getOrSetCache(`cache:movies:${movieId}`, async () => {
+            return await Movie.findById(movieId);
+        }, 3600);
+
         if (!movie) {
             return res.status(404).json({ message: 'Movie not found' });
         }
@@ -35,10 +42,11 @@ exports.getMovieById = async (req, res, next) => {
 // @route   GET /api/movies/:id/shows
 exports.getMovieShows = async (req, res, next) => {
     try {
-        // Only get future shows
+        const movieId = req.params.id;
+        // Don't strongly cache dynamic time-based shows in Redis for long to prevent stale availability
         const now = new Date();
         const shows = await Show.find({
-            movie: req.params.id,
+            movie: movieId,
             startTime: { $gte: now }
         })
             .populate('movie', 'title duration format')

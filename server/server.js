@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const passport = require('passport');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const cookieParser = require('cookie-parser');
 const { doubleCsrf } = require('csrf-csrf');
 const connectDB = require('./config/db');
@@ -12,8 +13,10 @@ const { initializeWebSocket } = require('./config/websocket');
 // Load env vars FIRST before anything else
 dotenv.config();
 
-// Connect to database
+// Connect to database and Redis
 connectDB();
+const { initRedis } = require('./config/redis');
+initRedis();
 
 const app = express();
 const isVercel = process.env.VERCEL === '1';
@@ -56,11 +59,16 @@ app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session for Passport
+// Session for Passport (Persisted in MongoDB to survive Vercel Serverless restarts)
 app.use(session({
     secret: process.env.SESSION_SECRET || 'fallback_secret_key_change_in_production',
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        collectionName: 'sessions',
+        ttl: 24 * 60 * 60 // 1 day
+    }),
     cookie: {
         maxAge: 1000 * 60 * 60 * 24, // 1 day
         httpOnly: true,
