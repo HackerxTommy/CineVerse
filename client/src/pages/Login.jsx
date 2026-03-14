@@ -94,7 +94,8 @@ const Login = () => {
     };
 
     const handleGoogleLogin = () => {
-        window.location.href = `${API_URL}/auth/google`;
+        // Use relative path for production (Vercel) to avoid redirecting to localhost
+        window.location.href = '/api/auth/google';
     };
 
     const toggleMode = () => {

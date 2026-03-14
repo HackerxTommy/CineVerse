@@ -27,7 +27,8 @@ const connectDB = async () => {
 
     } catch (error) {
         console.error(`MongoDB Connection Error: ${error.message}`);
-        process.exit(1);
+        // Let the application handle the error instead of exiting process
+        // In Vercel, exiting can cause unnecessary cold starts or 500 crashes
     }
 };
 

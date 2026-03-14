@@ -46,6 +46,7 @@ const SeatSelection = () => {
      
     useEffect(() => {
         fetchShow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showId]);
 
     useEffect(() => {

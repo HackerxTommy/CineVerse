@@ -4,14 +4,15 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const passport = require('passport');
 const session = require('express-session');
-const MongoStore = require('connect-mongo');
+const MongoStore = require('connect-mongo').MongoStore;
 const cookieParser = require('cookie-parser');
 const { doubleCsrf } = require('csrf-csrf');
 const connectDB = require('./config/db');
 const { initializeWebSocket } = require('./config/websocket');
 
 // Load env vars FIRST before anything else
-dotenv.config();
+const path = require('path');
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Connect to database and Redis
 connectDB();
@@ -64,11 +65,17 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'fallback_secret_key_change_in_production',
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({
-        mongoUrl: process.env.MONGO_URI,
-        collectionName: 'sessions',
-        ttl: 24 * 60 * 60 // 1 day
-    }),
+    store: (function() {
+        if (!process.env.MONGO_URI) {
+            console.error('❌ MONGO_URI is missing. Session persistence will fail!');
+            return undefined; // Falls back to MemoryStore (last resort)
+        }
+        return MongoStore.create({
+            mongoUrl: process.env.MONGO_URI,
+            collectionName: 'sessions',
+            ttl: 24 * 60 * 60 // 1 day
+        });
+    })(),
     cookie: {
         maxAge: 1000 * 60 * 60 * 24, // 1 day
         httpOnly: true,
@@ -132,7 +139,6 @@ app.get('/api/health', (req, res) => {
 });
 
 // ─── Serve React client if built files exist ───
-const path = require('path');
 const fs = require('fs');
 const publicPath = path.join(__dirname, 'public');
 if (fs.existsSync(path.join(publicPath, 'index.html'))) {
