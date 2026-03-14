@@ -201,7 +201,7 @@ const SeatSelection = () => {
             overflow: 'hidden'
         }}>
             {/* Movie Poster Cover */}
-            {show?.movie?.poster && (
+            {show && show.movie && show.movie.poster && (
                 <motion.div
                     initial={{ opacity: 0.25 }}
                     animate={{ opacity: showTrailer ? 0 : 0.25 }}
@@ -211,7 +211,7 @@ const SeatSelection = () => {
                         inset: 0,
                         zIndex: -1,
                         pointerEvents: 'none',
-                        backgroundImage: `url(${show?.movie?.poster})`,
+                        backgroundImage: `url(${show.movie.poster})`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         filter: 'grayscale(80%) contrast(1.2)'

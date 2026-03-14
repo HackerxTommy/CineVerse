@@ -184,21 +184,23 @@ const MovieDetails = () => {
                 }}
             >
                 {/* Poster Background layer (fades out when trailer starts) */}
-                <motion.div
-                    initial={{ opacity: 1 }}
-                    animate={{ opacity: ambientTrailerReady ? 0 : 1 }}
-                    transition={{ duration: 1.5 }}
-                    style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: `url(${backdrop || poster})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center top',
-                        backgroundAttachment: 'fixed',
-                        zIndex: -2,
-                        pointerEvents: 'none'
-                    }}
-                />
+                {(backdrop || poster) && (
+                    <motion.div
+                        initial={{ opacity: 1 }}
+                        animate={{ opacity: ambientTrailerReady ? 0 : 1 }}
+                        transition={{ duration: 1.5 }}
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: `url(${backdrop || poster})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center top',
+                            backgroundAttachment: 'fixed',
+                            zIndex: -2,
+                            pointerEvents: 'none'
+                        }}
+                    />
+                )}
 
                 {/* Dark Gradient Overlay for Readability (persists) */}
                 <div style={{
