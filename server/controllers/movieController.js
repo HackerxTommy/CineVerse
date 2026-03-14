@@ -5,15 +5,28 @@ const { getOrSetCache } = require('../middleware/cacheMiddleware');
 // @desc    Get all movies
 // @route   GET /api/movies
 exports.getMovies = async (req, res, next) => {
-    try {
-        const movies = await getOrSetCache('cache:movies:all', async () => {
-            return await Movie.find({}).sort({ releaseDate: -1 });
-        }, 3600); // Cache for 1 hour
+    let attempts = 0;
+    const maxAttempts = 2;
+    
+    const tryFetch = async () => {
+        try {
+            const movies = await getOrSetCache('cache:movies:all', async () => {
+                return await Movie.find({}).sort({ releaseDate: -1 });
+            }, 3600);
+            res.json(movies);
+        } catch (err) {
+            attempts++;
+            if (attempts < maxAttempts) {
+                console.log(`⚠️  Movie fetch failed (attempt ${attempts}), retrying...`);
+                // Wait 500ms before retry to allow DB pool to stabilize
+                setTimeout(tryFetch, 500);
+            } else {
+                next(err);
+            }
+        }
+    };
 
-        res.json(movies);
-    } catch (err) {
-        next(err);
-    }
+    tryFetch();
 };
 
 // @desc    Get movie by ID
