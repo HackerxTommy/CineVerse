@@ -16,17 +16,22 @@ dotenv.config();
 connectDB();
 
 const app = express();
-const server = http.createServer(app);
+const isVercel = process.env.VERCEL === '1';
 
-// Trust Render's reverse proxy (needed for secure cookies over HTTPS)
+// Only create HTTP server and WebSocket when NOT on Vercel (serverless)
+const server = isVercel ? null : http.createServer(app);
+
+// Trust reverse proxy (needed for secure cookies over HTTPS)
 const isProduction = process.env.NODE_ENV === 'production';
-if (isProduction) {
+if (isProduction || isVercel) {
     app.set('trust proxy', 1);
 }
 
-// Initialize WebSocket (Socket.IO)
-const io = initializeWebSocket(server);
-app.set('io', io);
+// Initialize WebSocket (Socket.IO) — not supported on Vercel serverless
+if (!isVercel && server) {
+    const io = initializeWebSocket(server);
+    app.set('io', io);
+}
 
 // Middleware
 const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173').split(',').map(s => s.trim());
@@ -156,8 +161,14 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📡 WebSocket ready`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Only start listening when running as a standalone server (not on Vercel)
+if (!isVercel && server) {
+    server.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`📡 WebSocket ready`);
+        console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+}
+
+// Export for Vercel serverless
+module.exports = app;

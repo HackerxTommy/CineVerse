@@ -70,7 +70,7 @@ jobs:
           done
 
   # ──────────────────────────────────────────
-  # Build Docker images
+  # Build Docker images (for local/docker-compose use)
   # ──────────────────────────────────────────
   docker:
     name: Docker Build
@@ -84,22 +84,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build server image
+      - name: Build unified image (root Dockerfile)
         uses: docker/build-push-action@v5
         with:
-          context: ./server
+          context: .
           push: false
-          tags: cineverse-server:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build client image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./client
-          push: false
-          tags: cineverse-client:${{ github.sha }}
-          build-args: |
-            VITE_API_URL=/api
+          tags: cineverse:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
