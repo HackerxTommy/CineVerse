@@ -14,9 +14,9 @@ const Contact = () => {
     };
 
     const contactInfo = [
-        { icon: '📍', title: 'Address', value: '123 Cinema Street, Bangalore, India 560001' },
-        { icon: '📞', title: 'Phone', value: '+91 80 1234 5678' },
-        { icon: '✉️', title: 'Email', value: 'support@cineverse.com' },
+        { icon: '📍', title: 'Address', value: 'Ghaziabad, India' },
+        { icon: '📞', title: 'Phone', value: '+91 8791661106' },
+        { icon: '✉️', title: 'Email', value: 'vishalgupta0x01@gmail.com' },
         { icon: '🕐', title: 'Hours', value: 'Mon-Sun: 9AM - 11PM' }
     ];
 

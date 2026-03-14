@@ -243,7 +243,7 @@ const Help = () => {
                             Contact Support
                         </motion.a>
                         <motion.a
-                            href="mailto:support@cineverse.com"
+                            href="mailto:vishalgupta0x01@gmail.com"
                             className="btn btn-outline"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}

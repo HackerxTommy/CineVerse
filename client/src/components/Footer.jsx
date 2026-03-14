@@ -80,9 +80,9 @@ const Footer = () => {
                     <div>
                         <h4 style={{ color: '#fff', marginBottom: '20px', fontSize: '1rem' }}>Contact</h4>
                         <div style={{ color: '#888', fontSize: '0.9rem' }}>
-                            <p style={{ marginBottom: '10px' }}>📧 support@cineverse.com</p>
-                            <p style={{ marginBottom: '10px' }}>📞 +91 98765 43210</p>
-                            <p>📍 Bangalore, India</p>
+                            <p style={{ marginBottom: '10px' }}>📧 vishalgupta0x01@gmail.com</p>
+                            <p style={{ marginBottom: '10px' }}>📞 +91 8791661106</p>
+                            <p>📍 Ghaziabad, India</p>
                         </div>
                     </div>
 
@@ -90,9 +90,17 @@ const Footer = () => {
                     <div>
                         <h4 style={{ color: '#fff', marginBottom: '20px', fontSize: '1rem' }}>Follow Us</h4>
                         <div style={{ display: 'flex', gap: '15px' }}>
-                            {['📘', '🐦', '📸', '▶️'].map((icon, i) => (
-                                <motion.div
+                            {[
+                                { icon: '📘', url: 'https://linkedin.in/vishalgupta0001' },
+                                { icon: '🐦', url: 'https://twitter.com/HackerxTommy' },
+                                { icon: '📸', url: 'https://instagram.com/vishal_gupta_ethhacker' },
+                                { icon: '▶️', url: '#' }
+                            ].map((social, i) => (
+                                <motion.a
                                     key={i}
+                                    href={social.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     whileHover={{ scale: 1.2, y: -3 }}
                                     style={{
                                         width: '40px',
@@ -103,11 +111,13 @@ const Footer = () => {
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         cursor: 'pointer',
-                                        fontSize: '1.2rem'
+                                        fontSize: '1.2rem',
+                                        textDecoration: 'none',
+                                        color: 'white'
                                     }}
                                 >
-                                    {icon}
-                                </motion.div>
+                                    {social.icon}
+                                </motion.a>
                             ))}
                         </div>
                     </div>
