@@ -111,15 +111,14 @@ app.use(passport.session());
 
 // ─── CSRF Protection (Double-Submit Cookie Pattern) ───
 const { generateToken, doubleCsrfProtection } = doubleCsrf({
-    getSecret: () => process.env.SESSION_SECRET || 'csrf-secret-fallback',
-    cookieName: '__csrf',
+    getSecret: () => process.env.SESSION_SECRET || 'csrf-secret-fallback-safe-default',
+    cookieName: 'x-csrf-token',
     cookieOptions: {
         httpOnly: true,
-        sameSite: isProduction ? 'none' : 'lax',
+        sameSite: isProduction ? 'none' : 'lax', // Must be none for cross-site if domain varies
         secure: isProduction,
         path: '/',
     },
-    size: 64,
     getTokenFromRequest: (req) => req.headers['x-csrf-token'],
 });
 
