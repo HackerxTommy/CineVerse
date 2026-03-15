@@ -13,13 +13,14 @@ const connectDB = async () => {
 
         console.log('🔄 Attempting to connect to MongoDB...');
         const conn = await mongoose.connect(mongoUri, {
-            serverSelectionTimeoutMS: 10000, // Increased to 10s for slow cold starts
+            serverSelectionTimeoutMS: 10000, 
             maxPoolSize: 10,
             socketTimeoutMS: 45000,
-            family: 4 // Force IPv4 to avoid some Vercel/Atlas networking issues
+            family: 4 
         });
 
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+        return conn;
     } catch (error) {
         console.error(`❌ MongoDB Connection Error: ${error.message}`);
         // Log more details if possible

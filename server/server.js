@@ -7,6 +7,7 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo').MongoStore;
 const cookieParser = require('cookie-parser');
 const { doubleCsrf } = require('csrf-csrf');
+const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const { initializeWebSocket } = require('./config/websocket');
 
@@ -15,11 +16,28 @@ const path = require('path');
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Connect to database and Redis
-connectDB();
+const dbPromise = connectDB();
 const { initRedis } = require('./config/redis');
 initRedis();
 
 const app = express();
+
+// ─── Database Readiness Middleware ───
+// This ENSURES that we never call models before Mongoose is connected.
+// Essential for serverless cold starts with bufferCommands: false.
+app.use(async (req, res, next) => {
+    if (mongoose.connection.readyState !== 1) {
+        try {
+            await dbPromise;
+            next();
+        } catch (err) {
+            console.error('❌ DB Readiness check failed:', err.message);
+            res.status(503).json({ message: 'Service Temporarily Unavailable (DB)' });
+        }
+    } else {
+        next();
+    }
+});
 const isVercel = process.env.VERCEL === '1';
 
 // Only create HTTP server and WebSocket when NOT on Vercel (serverless)
