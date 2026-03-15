@@ -6,7 +6,7 @@ const passport = require('passport');
 const session = require('express-session');
 const MongoStore = require('connect-mongo').MongoStore;
 const cookieParser = require('cookie-parser');
-const { doubleCsrf } = require('csrf-csrf');
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const { initializeWebSocket } = require('./config/websocket');
@@ -110,31 +110,18 @@ require('./config/passport')(passport);
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ─── CSRF Protection (Double-Submit Cookie Pattern) ───
-const csrfLib = require('csrf-csrf');
-const csrfInstance = csrfLib.doubleCsrf ? csrfLib.doubleCsrf({
-    getSecret: () => secret,
-    cookieName: 'x-csrf-token',
-    cookieOptions: {
-        httpOnly: true,
-        sameSite: isProduction ? 'none' : 'lax',
-        secure: isProduction,
-        path: '/',
-    },
-    getTokenFromRequest: (req) => req.headers['x-csrf-token'],
-}) : null;
-
-// Extracted for use
-const generateToken = csrfInstance ? csrfInstance.generateToken : null;
-const doubleCsrfProtection = csrfInstance ? csrfInstance.doubleCsrfProtection : null;
-
-// Endpoint to get a CSRF token (client calls this on app load)
-app.get('/api/auth/csrf-token', async (req, res) => {
+// ─── CSRF Protection (Custom Double-Submit Cookie Pattern) ───
+// This is more reliable in serverless than some external libraries.
+app.get('/api/auth/csrf-token', (req, res) => {
     try {
-        if (!generateToken) {
-            throw new Error('CSRF library initialization failed');
-        }
-        const token = generateToken(req, res);
+        const token = crypto.randomBytes(32).toString('hex');
+        // Set an encrypted or signed cookie? For double-submit, we just need a cookie.
+        res.cookie('x-csrf-token', token, {
+            httpOnly: false, // Client needs to read this to send back in header OR we send in JSON
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
+            path: '/'
+        });
         res.json({ csrfToken: token });
     } catch (error) {
         console.error('CSRF Token generation failed:', error.message);
@@ -144,13 +131,19 @@ app.get('/api/auth/csrf-token', async (req, res) => {
 
 // Apply CSRF protection to all state-changing routes
 app.use((req, res, next) => {
+    // Skip safe methods
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+    // Skip Stripe webhook
     if (req.path === '/api/payments/webhook') return next();
-    
-    if (doubleCsrfProtection) {
-        doubleCsrfProtection(req, res, next);
-    } else {
+
+    const token = req.headers['x-csrf-token'];
+    const cookieToken = req.cookies['x-csrf-token'];
+
+    if (token && cookieToken && token === cookieToken) {
         next();
+    } else {
+        console.warn(`CSRF Mismatch: Header(${token}) vs Cookie(${cookieToken})`);
+        res.status(403).json({ message: 'Invalid or missing CSRF token' });
     }
 });
 
