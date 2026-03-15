@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 
+// Better for serverless: fail fast if no connection instead of buffering
+mongoose.set('bufferCommands', false);
+
 const connectDB = async () => {
     try {
         const mongoUri = process.env.MONGO_URI;

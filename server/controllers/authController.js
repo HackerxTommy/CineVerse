@@ -1,6 +1,7 @@
 const passport = require('passport');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const { withRetry } = require('../utils/dbRetry');
 
 // @desc    Register new user
 // @route   POST /api/auth/register
@@ -16,7 +17,9 @@ exports.register = async (req, res, next) => {
     }
 
     try {
-        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        const existingUser = await withRetry(async () => {
+            return await User.findOne({ email: email.toLowerCase() });
+        });
         if (existingUser) {
             return res.status(400).json({ message: 'User with this email already exists' });
         }
@@ -24,10 +27,12 @@ exports.register = async (req, res, next) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        await User.create({
-            name: name.trim(),
-            email: email.toLowerCase().trim(),
-            password: hashedPassword
+        await withRetry(async () => {
+            return await User.create({
+                name: name.trim(),
+                email: email.toLowerCase().trim(),
+                password: hashedPassword
+            });
         });
 
         // Don't auto-login - redirect to login page
@@ -51,7 +56,9 @@ exports.login = async (req, res, next) => {
     }
 
     try {
-        const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+        const user = await withRetry(async () => {
+            return await User.findOne({ email: email.toLowerCase() }).select('+password');
+        });
         console.log(`Login attempt for: ${email}`);
         if (!user) {
             console.log('User not found');

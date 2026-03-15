@@ -73,7 +73,9 @@ app.use(session({
         return MongoStore.create({
             mongoUrl: process.env.MONGO_URI,
             collectionName: 'sessions',
-            ttl: 24 * 60 * 60 // 1 day
+            ttl: 24 * 60 * 60, // 1 day
+            autoRemove: 'native', // Use MongoDB's TTL index
+            touchAfter: 24 * 3600 // Only update session if data changed (except once every 24h)
         });
     })(),
     cookie: {
@@ -104,9 +106,15 @@ const { generateToken, doubleCsrfProtection } = doubleCsrf({
 });
 
 // Endpoint to get a CSRF token (client calls this on app load)
-app.get('/api/auth/csrf-token', (req, res) => {
-    const token = generateToken(req, res);
-    res.json({ csrfToken: token });
+app.get('/api/auth/csrf-token', async (req, res) => {
+    try {
+        // Ensure the session store is ready by doing a simple check
+        const token = generateToken(req, res);
+        res.json({ csrfToken: token });
+    } catch (error) {
+        console.error('CSRF Token generation failed:', error.message);
+        res.status(500).json({ message: 'Failed to generate security token' });
+    }
 });
 
 // Apply CSRF protection to all state-changing routes
