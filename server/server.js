@@ -111,7 +111,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ─── CSRF Protection (Double-Submit Cookie Pattern) ───
-const { generateToken, doubleCsrfProtection } = doubleCsrf({
+const csrfLib = require('csrf-csrf');
+const csrfInstance = csrfLib.doubleCsrf ? csrfLib.doubleCsrf({
     getSecret: () => secret,
     cookieName: 'x-csrf-token',
     cookieOptions: {
@@ -119,40 +120,38 @@ const { generateToken, doubleCsrfProtection } = doubleCsrf({
         sameSite: isProduction ? 'none' : 'lax',
         secure: isProduction,
         path: '/',
-        signed: true // Use signed cookies for extra security
     },
     getTokenFromRequest: (req) => req.headers['x-csrf-token'],
-});
+}) : null;
+
+// Extracted for use
+const generateToken = csrfInstance ? csrfInstance.generateToken : null;
+const doubleCsrfProtection = csrfInstance ? csrfInstance.doubleCsrfProtection : null;
 
 // Endpoint to get a CSRF token (client calls this on app load)
 app.get('/api/auth/csrf-token', async (req, res) => {
     try {
-        // Ensure the session store is ready by doing a simple check
+        if (!generateToken) {
+            throw new Error('CSRF library initialization failed');
+        }
         const token = generateToken(req, res);
         res.json({ csrfToken: token });
     } catch (error) {
         console.error('CSRF Token generation failed:', error.message);
-        res.status(500).json({ 
-            message: 'Failed to generate security token',
-            error: error.message,
-            stack: error.stack
-        });
+        res.status(500).json({ message: 'Failed to generate security token' });
     }
 });
 
 // Apply CSRF protection to all state-changing routes
-// Skip: GET, HEAD, OPTIONS (safe methods) and the Stripe webhook
 app.use((req, res, next) => {
-    // Skip safe methods
-    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
-        return next();
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+    if (req.path === '/api/payments/webhook') return next();
+    
+    if (doubleCsrfProtection) {
+        doubleCsrfProtection(req, res, next);
+    } else {
+        next();
     }
-    // Skip Stripe webhook (uses its own signature verification)
-    if (req.path === '/api/payments/webhook') {
-        return next();
-    }
-    // Validate CSRF token
-    doubleCsrfProtection(req, res, next);
 });
 
 // Routes
