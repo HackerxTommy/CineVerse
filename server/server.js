@@ -89,11 +89,11 @@ app.use(session({
             return undefined; // Falls back to MemoryStore (last resort)
         }
         return MongoStore.create({
-            mongoUrl: process.env.MONGO_URI,
+            clientPromise: dbPromise.then(conn => conn.connection.getClient()),
             collectionName: 'sessions',
             ttl: 24 * 60 * 60, // 1 day
-            autoRemove: 'native', // Use MongoDB's TTL index
-            touchAfter: 24 * 3600 // Only update session if data changed (except once every 24h)
+            autoRemove: 'native',
+            touchAfter: 24 * 3600
         });
     })(),
     cookie: {
