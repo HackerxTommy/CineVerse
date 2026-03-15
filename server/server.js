@@ -132,7 +132,11 @@ app.get('/api/auth/csrf-token', async (req, res) => {
         res.json({ csrfToken: token });
     } catch (error) {
         console.error('CSRF Token generation failed:', error.message);
-        res.status(500).json({ message: 'Failed to generate security token' });
+        res.status(500).json({ 
+            message: 'Failed to generate security token',
+            error: error.message,
+            stack: error.stack
+        });
     }
 });
 
