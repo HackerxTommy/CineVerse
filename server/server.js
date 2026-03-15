@@ -14,6 +14,7 @@ const { initializeWebSocket } = require('./config/websocket');
 // Load env vars FIRST before anything else
 const path = require('path');
 dotenv.config({ path: path.join(__dirname, '.env') });
+const secret = process.env.SESSION_SECRET || 'cineverse-session-secret-default-12345';
 
 // Connect to database and Redis
 const dbPromise = connectDB();
@@ -70,7 +71,7 @@ app.use(cors({
 }));
 
 // Cookie parser (required for CSRF double-submit cookie pattern)
-app.use(cookieParser());
+app.use(cookieParser(secret));
 
 // Stripe webhook needs raw body — mount BEFORE express.json()
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
@@ -111,13 +112,14 @@ app.use(passport.session());
 
 // ─── CSRF Protection (Double-Submit Cookie Pattern) ───
 const { generateToken, doubleCsrfProtection } = doubleCsrf({
-    getSecret: () => process.env.SESSION_SECRET || 'csrf-secret-fallback-safe-default',
+    getSecret: () => secret,
     cookieName: 'x-csrf-token',
     cookieOptions: {
         httpOnly: true,
-        sameSite: isProduction ? 'none' : 'lax', // Must be none for cross-site if domain varies
+        sameSite: isProduction ? 'none' : 'lax',
         secure: isProduction,
         path: '/',
+        signed: true // Use signed cookies for extra security
     },
     getTokenFromRequest: (req) => req.headers['x-csrf-token'],
 });
