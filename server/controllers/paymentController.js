@@ -10,15 +10,12 @@ const getSeatMultiplier = (row) => {
     return 1.0;
 };
 
-const CONVENIENCE_FEE = 30; // ₹30 per ticket
-
 const calculateSeatsTotal = (show, seatIds) => {
-    const baseTotal = seatIds.reduce((sum, seatId) => {
+    return seatIds.reduce((sum, seatId) => {
         const seat = show.seats.find(s => s.id === seatId);
         if (!seat) return sum;
         return sum + (show.price * getSeatMultiplier(seat.row));
     }, 0);
-    return baseTotal + (seatIds.length * CONVENIENCE_FEE);
 };
 
 // @desc    Create payment intent
