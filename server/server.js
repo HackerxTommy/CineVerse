@@ -57,7 +57,8 @@ if (!isVercel && server) {
 }
 
 // Middleware
-const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173').split(',').map(s => s.trim());
+const envOrigins = (process.env.CLIENT_URL || 'http://localhost:5173').split(',').map(s => s.trim());
+const allowedOrigins = [...envOrigins, 'https://cineverse-world.vercel.app'];
 app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (mobile apps, curl, etc.)
