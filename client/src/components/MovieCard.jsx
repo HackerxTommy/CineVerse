@@ -30,6 +30,7 @@ const MovieCard = ({ movie }) => {
             <motion.img
                 src={poster || 'https://via.placeholder.com/300x450?text=No+Poster'}
                 alt={title}
+                loading="lazy"
                 style={{
                     width: '100%',
                     height: '100%',

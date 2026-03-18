@@ -1,0 +1,30 @@
+658b7a0 - Vishal Gupta, fix: Correctly bind getBookingByPaymentId in paymentRoutes
+e8bdd9e - Vishal Gupta, fix: Production stability - robust DB connection and readiness middleware
+5f94a39 - Vishal Gupta, fix: Robust Redis initialization and correct movie field projection
+5cb567a - Vishal Gupta, fix: Final production stability fixes (WebGL, WebSocket, BookingSuccess)
+e48eab1 - Vishal Gupta, fix: Revert filtering, fix production WebGL/WebSocket crashes, maintain optimizations
+2fe878a - Vishal Gupta, fix: Robust react-window import and production WebSocket URL
+5ac8bdc - Vishal Gupta, feat/fix: Backend optimizations, API caching, Redis fallback, virtualization, Stripe success logic
+9cce32a - Vishal Gupta, Fix potential infinite loop and unstable Stripe initialization in PaymentPage
+525d4c3 - Vishal Gupta, Fix PaymentPage crash due to missing useMemo import
+3524e21 - Vishal Gupta, Fix payment crash with memoization and broaden CORS for all Vercel environments
+1f8a86c - Vishal Gupta, Optimize performance with .lean() and Redis readiness, and stabilize CORS origins
+048fa09 - Vishal Gupta, Implement custom reliable CSRF protection for production
+201c5a4 - Vishal Gupta, Fix CSRF generator TypeError with more robust library initialization
+45ca97f - Vishal Gupta, Expose CSRF error details for production debugging
+326e507 - Vishal Gupta, Align cookie secrets and enable signed CSRF cookies for production stability
+7fd6732 - Vishal Gupta, Simplify CSRF configuration for production stability
+3a7ff2d - Vishal Gupta, Fix CSRF token failure by ensuring MongoStore uses the shared DB connection promise
+bb4c3dd - Vishal Gupta, Add database readiness middleware to fix intermittent timeouts and login errors
+03fa4dd - Vishal Gupta, Implement database retry utility and CSRF error handling for Vercel resilience
+cc44d67 - Vishal Gupta, Enhance MongoDB connection resilience and force IPv4 for production
+b12632b - Vishal Gupta, Optimize MongoDB connection pooling for serverless cold starts
+0c49811 - Vishal Gupta, Add movie fetch retry for cold starts and update documentation
+a500fa8 - Vishal Gupta, Fix production 500 errors, Google OAuth redirects, and session store resilience
+6c245a8 - Vishal Gupta, Add root package.json for Vercel Serverless Function dependencies
+fa89b8a - Vishal Gupta, Remove python scripts from repo
+38d6abc - Vishal Gupta, Fix Google Auth Session, Redis cache, ScrollToTop, and Poster unmount animations
+65fbe70 - Vishal Gupta, Fix scroll position on load and explicit background-image for posters taking 1s
+5d8bbb0 - Vishal Gupta, Fix absolute z-index stacking context for background video on Vercel
+945f869 - Vishal Gupta, Fix undefined poster URL checks in background renders
+b0ca1ae - Vishal Gupta, Fade out poster when trailer starts

@@ -8,9 +8,22 @@ const { withRetry } = require('../utils/dbRetry');
 exports.getMovies = async (req, res, next) => {
     try {
         const movies = await withRetry(async () => {
-            return await getOrSetCache('cache:movies:all', async () => {
-                return await Movie.find({}).sort({ releaseDate: -1 });
-            }, 3600);
+            // No need for caching wrapper here since we rely on Upstash REST middleware (router-level)
+            // But we can still keep it fast via aggregation
+            return await Movie.aggregate([
+                { $sort: { releaseDate: -1 } },
+                { 
+                    $project: { 
+                        title: 1, 
+                        poster: 1, 
+                        genre: 1, // Fixed mismatch from previous iteration
+                        format: 1,
+                        duration: 1, 
+                        releaseDate: 1, 
+                        rating: 1 
+                    } 
+                }
+            ]);
         });
         res.json(movies);
     } catch (err) {

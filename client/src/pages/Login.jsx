@@ -48,7 +48,7 @@ const Login = () => {
             if (isLogin) {
                 if (require2FA) {
                     // Verify 2FA
-                    await api.post('/two-factor/validate', {
+                    await api.post('/2fa/validate', {
                         userId,
                         token: twoFactorCode
                     });

@@ -1,0 +1,20 @@
+658b7a0 fix: Correctly bind getBookingByPaymentId in paymentRoutes
+e8bdd9e fix: Production stability - robust DB connection and readiness middleware
+5f94a39 fix: Robust Redis initialization and correct movie field projection
+5cb567a fix: Final production stability fixes (WebGL, WebSocket, BookingSuccess)
+e48eab1 fix: Revert filtering, fix production WebGL/WebSocket crashes, maintain optimizations
+2fe878a fix: Robust react-window import and production WebSocket URL
+5ac8bdc feat/fix: Backend optimizations, API caching, Redis fallback, virtualization, Stripe success logic
+9cce32a Fix potential infinite loop and unstable Stripe initialization in PaymentPage
+525d4c3 Fix PaymentPage crash due to missing useMemo import
+3524e21 Fix payment crash with memoization and broaden CORS for all Vercel environments
+1f8a86c Optimize performance with .lean() and Redis readiness, and stabilize CORS origins
+048fa09 Implement custom reliable CSRF protection for production
+201c5a4 Fix CSRF generator TypeError with more robust library initialization
+45ca97f Expose CSRF error details for production debugging
+326e507 Align cookie secrets and enable signed CSRF cookies for production stability
+7fd6732 Simplify CSRF configuration for production stability
+3a7ff2d Fix CSRF token failure by ensuring MongoStore uses the shared DB connection promise
+bb4c3dd Add database readiness middleware to fix intermittent timeouts and login errors
+03fa4dd Implement database retry utility and CSRF error handling for Vercel resilience
+cc44d67 Enhance MongoDB connection resilience and force IPv4 for production

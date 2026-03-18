@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import api from '../utils/api';
 import MovieCard from '../components/MovieCard';
 import HeroScene from '../components/HeroScene';
+import { Grid } from 'react-window';
+import { AutoSizer } from 'react-virtualized-auto-sizer';
  
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
@@ -181,22 +183,47 @@ const Home = () => {
                         variants={containerVariants}
                         initial="hidden"
                         animate="visible"
-                        style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                            gap: '35px',
-                            paddingBottom: '80px'
-                        }}
+                        style={{ height: '80vh', paddingBottom: '80px', width: '100%' }}
                     >
-                        {movies.map((movie, index) => (
-                            <motion.div
-                                key={movie._id}
-                                variants={itemVariants}
-                                transition={{ delay: index * 0.1 }}
-                            >
-                                <MovieCard movie={movie} />
-                            </motion.div>
-                        ))}
+                        <AutoSizer>
+                            {({ height, width }) => {
+                                const columnWidth = 300; // Expected card width + gap
+                                const rowHeight = 450;
+                                const columnCount = Math.max(1, Math.floor(width / columnWidth));
+                                const rowCount = Math.ceil(movies.length / columnCount);
+
+                                return (
+                                    <Grid
+                                        columnCount={columnCount}
+                                        columnWidth={width / columnCount}
+                                        height={height}
+                                        rowCount={rowCount}
+                                        rowHeight={rowHeight}
+                                        width={width}
+                                        style={{ overflowX: 'hidden' }}
+                                    >
+                                        {({ columnIndex, rowIndex, style }) => {
+                                            const index = rowIndex * columnCount + columnIndex;
+                                            if (index >= movies.length) return null;
+                                            const movie = movies[index];
+                                            
+                                            // Ensure loading="lazy" is passed automatically or handled by MovieCard
+                                            return (
+                                                <div style={{ ...style, padding: '15px' }}>
+                                                    <motion.div
+                                                        variants={itemVariants}
+                                                        transition={{ delay: 0.1 }}
+                                                        style={{ height: '100%' }}
+                                                    >
+                                                        <MovieCard movie={movie} />
+                                                    </motion.div>
+                                                </div>
+                                            );
+                                        }}
+                                    </Grid>
+                                );
+                            }}
+                        </AutoSizer>
                     </motion.div>
                 )}
             </div>

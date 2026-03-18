@@ -46,6 +46,14 @@ const SeatSelection = () => {
      
     useEffect(() => {
         fetchShow();
+        
+        // Serverless-Friendly "Real-Time" Polling Strategy
+        // Polls the server every 4 seconds for fresh seat statuses
+        const pollInterval = setInterval(() => {
+            fetchShow(true); // pass true to indicate silent background fetch
+        }, 4000);
+
+        return () => clearInterval(pollInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showId]);
 
@@ -61,15 +69,29 @@ const SeatSelection = () => {
         return () => clearInterval(interval);
     }, [timerActive, timeLeft, navigate]);
 
-    const fetchShow = async () => {
+    const fetchShow = async (isBackground = false) => {
         try {
-            setLoading(true);
+            if (!isBackground) setLoading(true);
             const res = await api.get(`/shows/${showId}`);
             setShow(res.data);
+            
+            // Check if any selected seat got booked by someone else
+            if (isBackground && Array.isArray(selectedSeats) && selectedSeats.length > 0 && res.data?.seats) {
+                const nowBooked = selectedSeats.filter(seatId => {
+                    const latestSeatStatus = res.data.seats.find(s => s.id === seatId);
+                    if (!latestSeatStatus) return true;
+                    return latestSeatStatus.isBooked || (latestSeatStatus.lockedUntil && new Date(latestSeatStatus.lockedUntil) > new Date());
+                });
+                
+                if (nowBooked.length > 0) {
+                    setSelectedSeats(prev => prev.filter(id => !nowBooked.includes(id)));
+                    alert('Someone just booked/locked one of your selecting seats!');
+                }
+            }
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to load show');
+            if (!isBackground) setError(err.response?.data?.message || 'Failed to load show');
         } finally {
-            setLoading(false);
+            if (!isBackground) setLoading(false);
         }
     };
 

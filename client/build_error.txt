@@ -1,0 +1,28 @@
+
+> client@0.0.0 build
+> vite build
+
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 1083 modules transformed.
+Γ£ù Build failed in 4.16s
+error during build:
+src/pages/Home.jsx (5:9): "FixedSizeGrid" is not exported by "node_modules/react-window/dist/react-window.js", imported by "src/pages/Home.jsx".
+file: C:/CineVerse/client/src/pages/Home.jsx:5:9
+
+3: import MovieCard from '../components/MovieCard';
+4: import HeroScene from '../components/HeroScene';
+5: import { FixedSizeGrid as Grid } from 'react-window';
+            ^
+6: import { AutoSizer } from 'react-virtualized-auto-sizer';
+
+    at getRollupError (file:///C:/CineVerse/client/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
+    at error (file:///C:/CineVerse/client/node_modules/rollup/dist/es/shared/parseAst.js:397:42)
+    at Module.error (file:///C:/CineVerse/client/node_modules/rollup/dist/es/shared/node-entry.js:17022:16)
+    at Module.traceVariable (file:///C:/CineVerse/client/node_modules/rollup/dist/es/shared/node-entry.js:17478:29)
+    at ModuleScope.findVariable (file:///C:/CineVerse/client/node_modules/rollup/dist/es/shared/node-entry.js:15141:39)
+    at ReturnValueScope.findVariable (file:///C:/CineVerse/client/node_modules/rollup/dist/es/shared/node-entry.js:5688:38)
+    at FunctionBodyScope.findVariable (file:///C:/CineVerse/client/node_modules/rollup/dist/es/shared/node-entry.js:5688:38)
+    at ReturnValueScope.findVariable (file:///C:/CineVerse/client/node_modules/rollup/dist/es/shared/node-entry.js:5688:38)
+    at FunctionBodyScope.findVariable (file:///C:/CineVerse/client/node_modules/rollup/dist/es/shared/node-entry.js:5688:38)
+    at Identifier.bind (file:///C:/CineVerse/client/node_modules/rollup/dist/es/shared/node-entry.js:5462:40)

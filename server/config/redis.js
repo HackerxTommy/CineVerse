@@ -1,53 +1,80 @@
-const redis = require('redis');
+const { Redis } = require('@upstash/redis');
 
-let redisClient;
-let isRedisConnected = false;
+let redisClient = null;
 
-const initRedis = async () => {
-    const redisUrl = process.env.REDIS_URL;
-
-    // Fast fail if no REDIS_URL provided (e.g. local dev without Redis)
-    if (!redisUrl) {
-        console.log('⚠️  REDIS_URL not provided - API caching will be disabled.');
-        return;
+const initRedis = () => {
+    if (!process.env.REDIS_REST_URL || !process.env.REDIS_REST_TOKEN) {
+        console.log('Redis is disabled (REDIS_REST_URL or REDIS_REST_TOKEN not provided)');
+        return null;
     }
 
     try {
-        console.log('🔄 Initializing Redis connection...');
-        redisClient = redis.createClient({ 
-            url: redisUrl,
-            socket: {
-                connectTimeout: 5000 // 5 second timeout for Vercel
+        redisClient = new Redis({
+            url: process.env.REDIS_REST_URL,
+            token: process.env.REDIS_REST_TOKEN,
+        });
+        console.log('✅ Upstash Redis (REST) Enabled');
+    } catch (err) {
+        console.error('❌ Upstash Redis Initialized Failed:', err.message);
+        redisClient = null;
+    }
+
+    return redisClient;
+};
+
+const getRedisClient = () => redisClient;
+
+// Cached response middleware for Express using Upstash REST
+const cachedResponse = (ttlSeconds = 300) => async (req, res, next) => {
+    if (!redisClient) return next();
+
+    const isVercel = process.env.VERCEL === '1';
+    // Skip caching completely on Vercel dev env or if specifically requested
+    if (req.query.nocache === 'true') {
+        return next();
+    }
+
+    const key = `cache:${req.originalUrl || req.url}`;
+    
+    try {
+        // Fast fail timeout for serverless (Upstash usually replies in < 50ms)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        
+        const cachedData = await redisClient.get(key);
+        clearTimeout(timeoutId);
+
+        if (cachedData) {
+            console.log(`[Cache Hit - Upstash REST] ${key}`);
+            return res.json(typeof cachedData === 'string' ? JSON.parse(cachedData) : cachedData);
+        }
+        
+        console.log(`[Cache Miss] ${key}`);
+        
+        // Override res.json to cache the response before sending
+        const originalJson = res.json;
+        res.json = function(data) {
+            // Restore original res.json to prevent infinite loops
+            res.json = originalJson;
+            
+            // Background cache save (don't await it so we respond to user faster)
+            try {
+                redisClient.setex(key, ttlSeconds, JSON.stringify(data)).catch(err => {
+                    console.error(`[Redis SET Error] Background save failed for ${key}:`, err.message);
+                });
+            } catch (err) {
+                console.error(`[Redis Save Sync Error]`, err.message);
             }
-        });
 
-        redisClient.on('error', (err) => {
-            console.error('❌ Redis Client Error:', err.message);
-            isRedisConnected = false;
-        });
+            return originalJson.call(this, data);
+        };
 
-        redisClient.on('connect', () => {
-            console.log('✅ Connected to Redis');
-            isRedisConnected = true;
-        });
-
-        redisClient.on('ready', () => {
-            console.log('✓ Redis Client Ready');
-            isRedisConnected = true;
-        });
-
-        redisClient.on('end', () => {
-            console.log('ℹ️ Redis connection closed');
-            isRedisConnected = false;
-        });
-
-        await redisClient.connect();
-    } catch (error) {
-        console.error('❌ Failed to initialize Redis:', error.message);
-        isRedisConnected = false;
+        next();
+    } catch (err) {
+        console.warn(`[Redis GET Error] Fallback to DB. Error:`, err.message);
+        // Fallback to database if Redis fails
+        next();
     }
 };
 
-const getRedisClient = () => isRedisConnected ? redisClient : null;
-
-module.exports = { initRedis, getRedisClient };
+module.exports = { initRedis, getRedisClient, cachedResponse };
