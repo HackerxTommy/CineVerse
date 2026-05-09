@@ -715,24 +715,6 @@ const PaymentPage = () => {
 
     const { showId, selectedSeats, totalAmount, show } = location.state || {};
 
-    useEffect(() => {
-        // Validation checks
-        if (!user) {
-            navigate('/login', { state: { from: '/payment', message: 'Please login to continue' } });
-            return;
-        }
-        if (!showId || !selectedSeats || selectedSeats.length === 0) {
-            navigate('/', { state: { error: 'Invalid booking. Please select seats again.' } });
-            return;
-        }
-        if (!totalAmount || totalAmount <= 0) {
-            navigate('/', { state: { error: 'Invalid payment amount.' } });
-            return;
-        }
-
-        initializePayment();
-    }, [user, showId, selectedSeats, navigate, totalAmount, initializePayment]);
-
     const initializePayment = React.useCallback(async () => {
         try {
             // Validate seat lock before payment
@@ -769,6 +751,24 @@ const PaymentPage = () => {
             setLoading(false);
         }
     }, [showId, selectedSeats, totalAmount, navigate]);
+
+    useEffect(() => {
+        // Validation checks
+        if (!user) {
+            navigate('/login', { state: { from: '/payment', message: 'Please login to continue' } });
+            return;
+        }
+        if (!showId || !selectedSeats || selectedSeats.length === 0) {
+            navigate('/', { state: { error: 'Invalid booking. Please select seats again.' } });
+            return;
+        }
+        if (!totalAmount || totalAmount <= 0) {
+            navigate('/', { state: { error: 'Invalid payment amount.' } });
+            return;
+        }
+
+        initializePayment();
+    }, [user, showId, selectedSeats, navigate, totalAmount, initializePayment]);
 
     const handlePaymentSuccess = async (paymentIntentId) => {
         try {
