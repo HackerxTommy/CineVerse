@@ -874,7 +874,7 @@ const PaymentPage = () => {
                     </div>
 
                     {stripePromise && clientSecret ? (
-                        <Elements stripe={stripePromise} options={{ clientSecret }}>
+                        <Elements stripe={stripePromise}>
                             <PaymentForm
                                 clientSecret={clientSecret}
                                 showDetails={show}
