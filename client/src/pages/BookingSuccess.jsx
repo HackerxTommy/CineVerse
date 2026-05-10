@@ -3,6 +3,129 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
+import { Map, MapControls, MapMarker, MarkerContent, MarkerTooltip } from '@/components/ui/map';
+
+/* ------------------------------------------------------------------ */
+/*  Theater Map sub-component                                          */
+/* ------------------------------------------------------------------ */
+const TheaterMap = ({ theaterName }) => {
+    const [coords, setCoords] = useState(null);
+    const name = theaterName || 'Cinema';
+
+    useEffect(() => {
+        // Geocode theater name via Nominatim (free, no key needed)
+        const controller = new AbortController();
+        fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name + ' cinema theater')}&limit=1`,
+            { signal: controller.signal }
+        )
+            .then((r) => r.json())
+            .then((data) => {
+                if (data?.[0]) {
+                    setCoords([parseFloat(data[0].lon), parseFloat(data[0].lat)]);
+                } else {
+                    // Fallback: central India
+                    setCoords([77.209, 28.6139]);
+                }
+            })
+            .catch(() => setCoords([77.209, 28.6139]));
+
+        return () => controller.abort();
+    }, [name]);
+
+    if (!coords) {
+        return (
+            <div style={{
+                width: '100%',
+                height: '180px',
+                borderRadius: '12px',
+                background: 'rgba(255,255,255,0.03)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#666',
+                fontSize: '0.85rem',
+                marginBottom: '25px',
+            }}>
+                Loading map…
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ width: '100%', marginBottom: '25px', textAlign: 'left' }}>
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '10px',
+            }}>
+                <span style={{ fontSize: '1.2rem' }}>📍</span>
+                <span style={{
+                    color: '#888',
+                    fontSize: '0.8rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    fontWeight: 600,
+                }}>
+                    Theater Location
+                </span>
+            </div>
+
+            <div style={{
+                borderRadius: '12px',
+                overflow: 'hidden',
+                border: '1px solid rgba(255,255,255,0.1)',
+                height: '180px',
+                width: '100%',
+            }}>
+                <Map center={coords} zoom={14}>
+                    <MapControls position="top-right" />
+                    <MapMarker longitude={coords[0]} latitude={coords[1]}>
+                        <MarkerContent>
+                            <div style={{
+                                width: '18px',
+                                height: '18px',
+                                background: '#e50914',
+                                borderRadius: '50%',
+                                border: '3px solid #fff',
+                                boxShadow: '0 0 12px rgba(229,9,20,0.6)',
+                            }} />
+                        </MarkerContent>
+                        <MarkerTooltip>{name}</MarkerTooltip>
+                    </MapMarker>
+                </Map>
+            </div>
+
+            <motion.a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' cinema theater')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    marginTop: '10px',
+                    padding: '10px',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '10px',
+                    color: '#4285f4',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    border: '1px solid rgba(66,133,244,0.2)',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                }}
+            >
+                🗺️ Get Directions
+            </motion.a>
+        </div>
+    );
+};
 
 const BookingSuccess = () => {
     const location = useLocation();
@@ -261,61 +384,8 @@ const BookingSuccess = () => {
                             </motion.div>
                             <p className="qr-instruction" style={{ marginBottom: '25px' }}>Scan this QR code at the theater</p>
 
-                            {/* Google Maps - Theater Location */}
-                            <div style={{ width: '100%', marginBottom: '25px', textAlign: 'left' }}>
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    marginBottom: '10px'
-                                }}>
-                                    <span style={{ fontSize: '1.2rem' }}>📍</span>
-                                    <span style={{ color: '#888', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Theater Location</span>
-                                </div>
-                                <div style={{
-                                    borderRadius: '12px',
-                                    overflow: 'hidden',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    height: '180px',
-                                    width: '100%'
-                                }}>
-                                    <iframe
-                                        title="Theater Location"
-                                        width="100%"
-                                        height="100%"
-                                        style={{ border: 0 }}
-                                        loading="lazy"
-                                        referrerPolicy="no-referrer-when-downgrade"
-                                        src={`https://www.google.com/maps/embed/v1/search?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent((booking.theater || 'Cinema') + ' cinema theater')}`}
-                                    />
-                                </div>
-                                <motion.a
-                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((booking.theater || 'Cinema') + ' cinema theater')}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '8px',
-                                        marginTop: '10px',
-                                        padding: '10px',
-                                        background: 'rgba(255,255,255,0.05)',
-                                        borderRadius: '10px',
-                                        color: '#4285f4',
-                                        fontSize: '0.85rem',
-                                        fontWeight: 600,
-                                        textDecoration: 'none',
-                                        border: '1px solid rgba(66,133,244,0.2)',
-                                        width: '100%',
-                                        boxSizing: 'border-box'
-                                    }}
-                                >
-                                    🗺️ Open in Google Maps
-                                </motion.a>
-                            </div>
+                            {/* Theater Location — MapLibre GL */}
+                            <TheaterMap theaterName={booking.theater} />
 
                             {/* Share Buttons */}
                             <div style={{ width: '100%', marginBottom: '10px' }}>
