@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
 
@@ -88,33 +89,44 @@ const BookingSuccess = () => {
             const end = Date.now() + duration;
 
             const colors = ['#e50914', '#00f2ea', '#ffd700', '#ff00ff'];
+            const fireConfetti = typeof confetti === 'function' ? confetti : (confetti && confetti.default ? confetti.default : null);
+
+            if (!fireConfetti) return;
 
             (function frame() {
-                confetti({
-                    particleCount: 4,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0 },
-                    colors: colors
-                });
-                confetti({
-                    particleCount: 4,
-                    angle: 120,
-                    spread: 55,
-                    origin: { x: 1 },
-                    colors: colors
-                });
+                try {
+                    fireConfetti({
+                        particleCount: 4,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0 },
+                        colors: colors
+                    });
+                    fireConfetti({
+                        particleCount: 4,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1 },
+                        colors: colors
+                    });
 
-                if (Date.now() < end) {
-                    requestAnimationFrame(frame);
+                    if (Date.now() < end) {
+                        requestAnimationFrame(frame);
+                    }
+                } catch (e) {
+                    console.error('Confetti error:', e);
                 }
             }());
         };
 
-        celebrateSuccess();
-
-        // Show ticket after celebration
-        setTimeout(() => setShowTicket(true), 800);
+        try {
+            celebrateSuccess();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            // Show ticket after celebration
+            setTimeout(() => setShowTicket(true), 800);
+        }
     }, [booking, navigate]);
 
     if (!booking) return null;
