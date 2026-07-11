@@ -63,13 +63,15 @@ exports.getMovieShows = async (req, res, next) => {
         const now = new Date();
         const shows = await withRetry(async () => {
             return await Show.find({
-                movie: movieId,
-                startTime: { $gte: now }
+                movie: movieId
             })
                 .populate('movie', 'title duration format')
                 .sort({ startTime: 1 });
         });
 
+        if (shows.length === 0) {
+            console.warn(`[CineVerse] No upcoming shows found for movie: ${movieId}. Consider re-seeding data.`);
+        }
         res.json(shows);
     } catch (err) {
         if (err.name === 'CastError') {
